@@ -2,6 +2,9 @@
   "name": "ligafam",
   "private": true,
   "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "turbo run dev --filter=web",
     "build": "turbo run build",

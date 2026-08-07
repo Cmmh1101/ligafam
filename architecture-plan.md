@@ -45,7 +45,7 @@ MVP = **Next.js PWA + Supabase**, web only, offline-capable, baseball only. Reac
 | Realtime | Supabase Realtime (Postgres CDC + Broadcast channels) | Live scoring & chat |
 | i18n | `next-intl` | Locale in URL or user preference; toggle stored per-user |
 | Push notifications | Web Push (VAPID) via Edge Function + `web-push` lib | RN will use Expo push later |
-| Hosting | Vercel (web) | Supabase hosted or self-hosted later if cost matters |
+| Hosting | Netlify (web), via `@netlify/plugin-nextjs` | Supabase hosted or self-hosted later if cost matters |
 
 ---
 

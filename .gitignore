@@ -25,6 +25,10 @@ apps/web/public/swe-worker-*.js
 # TypeScript incremental build info
 *.tsbuildinfo
 
+# This is a pnpm-only monorepo -- guard against a stray npm/yarn lockfile
+package-lock.json
+yarn.lock
+
 # Misc
 .DS_Store
 *.log
