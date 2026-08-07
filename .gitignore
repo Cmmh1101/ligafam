@@ -22,6 +22,9 @@ apps/web/public/sw.js
 apps/web/public/sw.js.map
 apps/web/public/swe-worker-*.js
 
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Misc
 .DS_Store
 *.log

@@ -6,6 +6,10 @@
     "cancel": "Cancel",
     "approve": "Approve",
     "reject": "Reject",
+    "continue": "Continue",
+    "back": "Back",
+    "myTeams": "My teams",
+    "createTeam": "Create team",
     "offlineBanner": "Offline — showing last synced data"
   },
   "auth": {
@@ -39,7 +43,30 @@
     "calendar": "Calendar",
     "chat": "Team chat",
     "selectYourKid": "Select your kid on the roster",
-    "pendingApproval": "Your request is pending approval"
+    "pendingApproval": "Your request is pending approval",
+    "teamName": "Team name",
+    "ageGroup": "Age group",
+    "ageGroupHint": "Optional, e.g. 10U",
+    "createTeamTitle": "Create a new team",
+    "inviteCode": "Invite code",
+    "inviteCodeHint": "Share this code with family and fans so they can join",
+    "enterInviteCode": "Invite code",
+    "chooseRole": "How do you want to join?",
+    "noPlayersYet": "This team doesn't have any players on the roster yet",
+    "pendingRequests": "Pending requests",
+    "noPendingRequests": "No pending requests",
+    "requestedAt": "Requested",
+    "addPlayer": "Add player",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "jerseyNumber": "Jersey number",
+    "noRoster": "No players on the roster yet",
+    "notFoundOrNotMember": "Team not found, or you're not a member",
+    "statusPending": "Pending",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "viewTeam": "View team",
+    "noTeamsYet": "You don't belong to any teams yet"
   },
   "rsvp": {
     "yes": "Attending",
@@ -65,5 +92,19 @@
     "inning": "Inning",
     "top": "Top",
     "bottom": "Bottom"
+  },
+  "errors": {
+    "notAuthenticated": "You need to sign in to continue",
+    "notAuthorized": "You don't have permission to do this",
+    "adminNotAllowedViaJoin": "You can't join as an admin",
+    "invalidInviteCode": "Invalid invite code",
+    "alreadyMember": "You're already a member of this team",
+    "requestAlreadyPending": "You already have a pending request for this team",
+    "familyRequiresPlayerSelection": "Select at least one player",
+    "invalidPlayerSelection": "Invalid player selection",
+    "requestNotFound": "Request not found",
+    "requestNotPending": "This request has already been processed",
+    "gameNotFound": "Game not found",
+    "generic": "Something went wrong, please try again"
   }
 }

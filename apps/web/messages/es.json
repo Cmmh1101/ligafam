@@ -6,6 +6,10 @@
     "cancel": "Cancelar",
     "approve": "Aprobar",
     "reject": "Rechazar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "myTeams": "Mis equipos",
+    "createTeam": "Crear equipo",
     "offlineBanner": "Sin conexión — mostrando la última información guardada"
   },
   "auth": {
@@ -39,7 +43,30 @@
     "calendar": "Calendario",
     "chat": "Chat del equipo",
     "selectYourKid": "Selecciona a tu hijo/a en el roster",
-    "pendingApproval": "Tu solicitud está pendiente de aprobación"
+    "pendingApproval": "Tu solicitud está pendiente de aprobación",
+    "teamName": "Nombre del equipo",
+    "ageGroup": "Categoría de edad",
+    "ageGroupHint": "Opcional, ej. 10U",
+    "createTeamTitle": "Crear un nuevo equipo",
+    "inviteCode": "Código de invitación",
+    "inviteCodeHint": "Comparte este código con familias y aficionados para que se unan",
+    "enterInviteCode": "Código de invitación",
+    "chooseRole": "¿Cómo quieres unirte?",
+    "noPlayersYet": "Este equipo aún no tiene jugadores en el roster",
+    "pendingRequests": "Solicitudes pendientes",
+    "noPendingRequests": "No hay solicitudes pendientes",
+    "requestedAt": "Solicitado",
+    "addPlayer": "Agregar jugador",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "jerseyNumber": "Número de camiseta",
+    "noRoster": "Aún no hay jugadores en el roster",
+    "notFoundOrNotMember": "No se encontró el equipo, o no eres miembro",
+    "statusPending": "Pendiente",
+    "statusApproved": "Aprobado",
+    "statusRejected": "Rechazado",
+    "viewTeam": "Ver equipo",
+    "noTeamsYet": "Aún no perteneces a ningún equipo"
   },
   "rsvp": {
     "yes": "Asistirá",
@@ -65,5 +92,19 @@
     "inning": "Entrada",
     "top": "Alta",
     "bottom": "Baja"
+  },
+  "errors": {
+    "notAuthenticated": "Debes iniciar sesión para continuar",
+    "notAuthorized": "No tienes permiso para hacer esto",
+    "adminNotAllowedViaJoin": "No puedes unirte como administrador",
+    "invalidInviteCode": "Código de invitación inválido",
+    "alreadyMember": "Ya eres miembro de este equipo",
+    "requestAlreadyPending": "Ya tienes una solicitud pendiente para este equipo",
+    "familyRequiresPlayerSelection": "Selecciona al menos un jugador",
+    "invalidPlayerSelection": "Selección de jugador inválida",
+    "requestNotFound": "Solicitud no encontrada",
+    "requestNotPending": "Esta solicitud ya fue procesada",
+    "gameNotFound": "Partido no encontrado",
+    "generic": "Algo salió mal, intenta de nuevo"
   }
 }
