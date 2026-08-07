@@ -1,0 +1,69 @@
+{
+  "common": {
+    "appName": "LigaFam",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "offlineBanner": "Sin conexión — mostrando la última información guardada"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Crear cuenta",
+    "phoneNumber": "Número de teléfono",
+    "phoneHint": "Formato: +1 234 567 8900",
+    "sendCode": "Enviar código",
+    "verificationCode": "Código de verificación",
+    "verifyCode": "Verificar código",
+    "changePhone": "Cambiar número",
+    "emailAddress": "Correo electrónico",
+    "continueWithEmail": "Continuar con correo",
+    "continueWithPhone": "Continuar con teléfono",
+    "continueWithGoogle": "Continuar con Google",
+    "checkYourEmail": "Revisa tu correo para el enlace de acceso",
+    "invalidCode": "Código inválido, intenta de nuevo",
+    "genericError": "Algo salió mal, intenta de nuevo",
+    "signOut": "Cerrar sesión",
+    "or": "o"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "family": "Familia",
+    "fan": "Aficionado"
+  },
+  "team": {
+    "joinTeam": "Unirme a un equipo",
+    "record": "Récord",
+    "roster": "Roster",
+    "calendar": "Calendario",
+    "chat": "Chat del equipo",
+    "selectYourKid": "Selecciona a tu hijo/a en el roster",
+    "pendingApproval": "Tu solicitud está pendiente de aprobación"
+  },
+  "rsvp": {
+    "yes": "Asistirá",
+    "no": "No asistirá",
+    "maybe": "Tal vez",
+    "no_response": "Sin respuesta"
+  },
+  "positions": {
+    "P": "Lanzador",
+    "C": "Receptor",
+    "1B": "Primera base",
+    "2B": "Segunda base",
+    "3B": "Tercera base",
+    "SS": "Campocorto",
+    "LF": "Jardinero izquierdo",
+    "CF": "Jardinero central",
+    "RF": "Jardinero derecho"
+  },
+  "game": {
+    "live": "En vivo",
+    "final": "Final",
+    "scheduled": "Programado",
+    "inning": "Entrada",
+    "top": "Alta",
+    "bottom": "Baja"
+  }
+}

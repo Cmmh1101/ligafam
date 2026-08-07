@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# Env files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# Service worker build output
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/swe-worker-*.js
+
+# Misc
+.DS_Store
+*.log

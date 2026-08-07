@@ -1,0 +1,69 @@
+{
+  "common": {
+    "appName": "LigaFam",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "approve": "Approve",
+    "reject": "Reject",
+    "offlineBanner": "Offline — showing last synced data"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "phoneNumber": "Phone number",
+    "phoneHint": "Format: +1 234 567 8900",
+    "sendCode": "Send code",
+    "verificationCode": "Verification code",
+    "verifyCode": "Verify code",
+    "changePhone": "Change number",
+    "emailAddress": "Email address",
+    "continueWithEmail": "Continue with email",
+    "continueWithPhone": "Continue with phone",
+    "continueWithGoogle": "Continue with Google",
+    "checkYourEmail": "Check your email for the sign-in link",
+    "invalidCode": "Invalid code, please try again",
+    "genericError": "Something went wrong, please try again",
+    "signOut": "Sign out",
+    "or": "or"
+  },
+  "roles": {
+    "admin": "Admin",
+    "family": "Family",
+    "fan": "Fan"
+  },
+  "team": {
+    "joinTeam": "Join a team",
+    "record": "Record",
+    "roster": "Roster",
+    "calendar": "Calendar",
+    "chat": "Team chat",
+    "selectYourKid": "Select your kid on the roster",
+    "pendingApproval": "Your request is pending approval"
+  },
+  "rsvp": {
+    "yes": "Attending",
+    "no": "Not attending",
+    "maybe": "Maybe",
+    "no_response": "No response"
+  },
+  "positions": {
+    "P": "Pitcher",
+    "C": "Catcher",
+    "1B": "First base",
+    "2B": "Second base",
+    "3B": "Third base",
+    "SS": "Shortstop",
+    "LF": "Left field",
+    "CF": "Center field",
+    "RF": "Right field"
+  },
+  "game": {
+    "live": "Live",
+    "final": "Final",
+    "scheduled": "Scheduled",
+    "inning": "Inning",
+    "top": "Top",
+    "bottom": "Bottom"
+  }
+}
