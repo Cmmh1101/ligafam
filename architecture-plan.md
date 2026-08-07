@@ -12,6 +12,8 @@ Three roles per team:
 - **Family member**: linked to a specific roster player (their kid). RSVP, chat, snack planning, calendar, scores.
 - **Fan**: read-only follower. Record, calendar, live/final scores.
 
+A person's role is scoped **per team**, not global — family members and fans can follow/join multiple teams at once (e.g. a parent with kids on two different teams, or a fan following several). Already supported without any schema change: `team_members` is keyed on `unique(team_id, user_id)`, not one-row-per-user, so a profile can hold an independent membership row (with its own role/status) on as many teams as it joins.
+
 MVP = **Next.js PWA + Supabase**, web only, offline-capable, baseball only. React Native app is Phase 2, built on the same Supabase schema and shared TypeScript logic.
 
 ---
@@ -316,6 +318,10 @@ $$ language sql security definer stable;
 3. All connected clients (family + fans) subscribe via Supabase Realtime to `games:id=eq.<id>` and `game_score_events` inserts → live-updating scoreboard, no polling.
 4. Game end → admin marks `status='final'` → triggers season record recalculation (materialized view or a `team_season_records` summary table, refreshed via trigger or Edge Function).
 
+**MVP scoring UI scope (confirmed):** the viewer experience is a TV-style score bug — score, inning, top/bottom, live/final status. This is exactly what the current schema/RPC already produce (`games.our_score`/`opponent_score`/`current_inning`/`inning_half` via `record_score_event()`) — no further data-model work needed to hit this bar.
+
+A GameChanger-style detailed live scoring engine — pitch-by-pitch, at-bat outcomes, full box score, play-by-play feed — is explicitly **post-MVP** (see §8a). It's a meaningfully larger scope (new tables for at-bats/pitches, a real scoring-rules engine) and would slow down getting the MVP scoreboard live. Build the simple version first, layer in detail later without needing to break the `games`/`game_score_events` model that already exists.
+
 ### 5.4 Offline behavior (PWA)
 - **Reads**: On load, cache team/roster/calendar/last-known scores into IndexedDB (Dexie). If offline, app serves from cache with a subtle "offline — showing last synced data" banner.
 - **Writes while offline**: Only for family actions that make sense offline-first — RSVP, snack claim, chat message. Queue in an `outbox` table in IndexedDB; sync on reconnect via background sync (Serwist) or on next app open.
@@ -360,6 +366,21 @@ Edge Function `send-notification` triggered by Postgres webhooks (Supabase's `pg
 
 ---
 
+## 8a. Post-MVP Roadmap (captured for later, not being built now)
+
+Explicitly out of scope for the MVP, but worth recording so the intent isn't lost:
+
+| Feature | Notes |
+|---|---|
+| **Detailed live scoring engine** | Pitch-by-pitch, at-bat outcomes, full box score — GameChanger-style. Needs new tables (at-bats, pitches, a baseball rules/state engine) layered on top of the existing `games`/`game_score_events` model, not a replacement for it. |
+| **In-app live streaming** | A team member (usually a parent) records the game from their phone; all approved team members + fans can watch live. Needs a streaming provider (e.g. Mux, LiveKit, Cloudflare Stream — ingest via RTMP/WebRTC from a mobile browser or the Phase-2 RN app, playback via HLS). Real infra + bandwidth cost, so this likely lands after the RN app (Phase 2), not before. |
+| **Paid tier — game recordings (VOD)** | Live streams persist as recordings, watchable after the fact. Requires storage + a paid-plan gate. |
+| **Paid tier — full stats** | Full team + per-player stats, per game and per season (batting/pitching lines, not just win/loss record). Depends on the detailed scoring engine above to have the underlying data to aggregate. |
+
+These four are related: streaming and detailed stats both assume a paid plan exists, which means **payments (§9.6) stops being optional** once this phase starts — a Stripe customer/subscription hook on `teams` (or `profiles`, tbd) becomes a real prerequisite, not a nice-to-have. Worth deciding the billing unit (per team? per admin? per family?) before starting this phase, not during it.
+
+---
+
 ## 9. Open Decisions Before We Start Building
 
 1. **Roster persistence model** — reset per season vs. persist team-level with season activation (I recommend the latter — §3.3).
@@ -367,7 +388,7 @@ Edge Function `send-notification` triggered by Postgres webhooks (Supabase's `pg
 3. **Team discovery** — is there a public directory/search, or is joining always via invite code/link? (Affects onboarding UX and whether team pages need to be public/SEO-indexable — could actually help organic growth in the Hispanic community market.)
 4. **Multi-sport data model now vs later** — since baseball-only is MVP, do we want `games`/scoring tables generic enough to swap in soccer/basketball later, or fully baseball-shaped (innings) for speed now? I've modeled it baseball-shaped above; a sport-agnostic scoring engine is more work but avoids a schema migration later.
 5. **Notification channels beyond push** — SMS/WhatsApp matters a lot for this audience; is that Phase 2 or should we budget for Twilio/WhatsApp Business API sooner?
-6. **Payments** — any plan for team fees/dues collection later? Doesn't need building now, but worth knowing if `teams`/`team_members` needs a Stripe customer hook eventually.
+6. **Payments** — confirmed needed eventually: streaming recordings and full per-game/season stats (§8a) are planned as a paid tier, on top of any team fees/dues use case. Still not needed for the MVP itself, but the billing unit (per team / per admin / per family) should get decided before §8a work starts, not mid-build.
 
 ---
 
