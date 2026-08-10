@@ -26,7 +26,14 @@
     "continueWithGoogle": "Continue with Google",
     "genericError": "Something went wrong, please try again",
     "signOut": "Sign out",
-    "or": "or"
+    "or": "or",
+    "forgotPassword": "Forgot your password?",
+    "sendResetLink": "Send reset link",
+    "checkEmailForReset": "Check your email to reset your password",
+    "backToSignIn": "Back to sign in",
+    "resetPasswordTitle": "Reset password",
+    "newPassword": "New password",
+    "updatePassword": "Save password"
   },
   "roles": {
     "admin": "Admin",

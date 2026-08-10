@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot";
 
 function authErrorKey(message: string | undefined): string {
   if (!message) return "genericError";
@@ -25,12 +25,14 @@ export function SignInForm() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function switchMode(next: Mode) {
     setMode(next);
     setError(null);
+    setResetEmailSent(false);
   }
 
   async function submit(e: FormEvent) {
@@ -53,12 +55,76 @@ export function SignInForm() {
     router.refresh();
   }
 
+  async function sendResetLink(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    // resetPasswordForEmail intentionally doesn't reveal whether the email
+    // exists (anti-enumeration) -- errors here are transport/rate-limit
+    // failures, not "no such account".
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`
+    });
+
+    setLoading(false);
+    if (error) {
+      setError(t(authErrorKey(error.message)));
+      return;
+    }
+    setResetEmailSent(true);
+  }
+
   async function continueWithGoogle() {
     setError(null);
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` }
     });
+  }
+
+  if (mode === "forgot") {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-xl font-semibold text-slate-900">{t("forgotPassword")}</h1>
+
+        {resetEmailSent ? (
+          <p className="text-slate-600">{t("checkEmailForReset")}</p>
+        ) : (
+          <form onSubmit={sendResetLink} className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700" htmlFor="reset-email">
+              {t("emailAddress")}
+            </label>
+            <input
+              id="reset-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="rounded-lg border border-slate-300 px-4 py-3"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+            >
+              {t("sendResetLink")}
+            </button>
+          </form>
+        )}
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <button
+          type="button"
+          onClick={() => switchMode("login")}
+          className="text-sm text-slate-500 underline"
+        >
+          {t("backToSignIn")}
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -95,6 +161,16 @@ export function SignInForm() {
           className="rounded-lg border border-slate-300 px-4 py-3"
         />
         {mode === "register" && <p className="text-xs text-slate-500">{t("passwordHint")}</p>}
+
+        {mode === "login" && (
+          <button
+            type="button"
+            onClick={() => switchMode("forgot")}
+            className="self-end text-xs text-slate-500 underline"
+          >
+            {t("forgotPassword")}
+          </button>
+        )}
 
         <button
           type="submit"

@@ -26,7 +26,14 @@
     "continueWithGoogle": "Continuar con Google",
     "genericError": "Algo salió mal, intenta de nuevo",
     "signOut": "Cerrar sesión",
-    "or": "o"
+    "or": "o",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "sendResetLink": "Enviar enlace de recuperación",
+    "checkEmailForReset": "Revisa tu correo para restablecer tu contraseña",
+    "backToSignIn": "Volver a iniciar sesión",
+    "resetPasswordTitle": "Restablecer contraseña",
+    "newPassword": "Nueva contraseña",
+    "updatePassword": "Guardar contraseña"
   },
   "roles": {
     "admin": "Administrador",
