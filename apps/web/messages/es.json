@@ -66,7 +66,9 @@
     "statusApproved": "Aprobado",
     "statusRejected": "Rechazado",
     "viewTeam": "Ver equipo",
-    "noTeamsYet": "Aún no perteneces a ningún equipo"
+    "noTeamsYet": "Aún no perteneces a ningún equipo",
+    "linkToMe": "Vincularme",
+    "linkedToMe": "Vinculado a mí"
   },
   "rsvp": {
     "yes": "Asistirá",

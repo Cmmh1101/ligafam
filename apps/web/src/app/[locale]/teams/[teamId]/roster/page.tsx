@@ -1,7 +1,7 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { addPlayerAction } from "./actions";
+import { addPlayerAction, toggleSelfLinkAction } from "./actions";
 
 export default async function RosterPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = await params;
@@ -49,7 +49,21 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
     .eq("team_id", teamId)
     .order("last_name", { ascending: true });
 
+  const { data: myMembership } = await supabase
+    .from("team_members")
+    .select("id")
+    .eq("team_id", teamId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const { data: myLinks } = myMembership
+    ? await supabase.from("family_links").select("player_id").eq("team_member_id", myMembership.id)
+    : { data: [] };
+
+  const myLinkedPlayerIds = new Set((myLinks ?? []).map((l) => l.player_id));
+
   const addPlayer = addPlayerAction.bind(null, locale, teamId);
+  const toggleSelfLink = toggleSelfLinkAction.bind(null, locale, teamId);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
@@ -64,19 +78,37 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
         <p className="text-slate-600">{t("team.noRoster")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {roster.map((player) => (
-            <li
-              key={player.id}
-              className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
-            >
-              <span className="text-slate-900">
-                {player.first_name} {player.last_name}
-              </span>
-              {player.jersey_number && (
-                <span className="text-sm text-slate-500">#{player.jersey_number}</span>
-              )}
-            </li>
-          ))}
+          {roster.map((player) => {
+            const isLinked = myLinkedPlayerIds.has(player.id);
+            const toggleForPlayer = toggleSelfLink.bind(null, player.id);
+            return (
+              <li
+                key={player.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-4 py-3"
+              >
+                <div className="flex flex-col">
+                  <span className="text-slate-900">
+                    {player.first_name} {player.last_name}
+                  </span>
+                  {player.jersey_number && (
+                    <span className="text-sm text-slate-500">#{player.jersey_number}</span>
+                  )}
+                </div>
+                <form action={toggleForPlayer}>
+                  <button
+                    type="submit"
+                    className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
+                      isLinked
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {isLinked ? t("team.linkedToMe") : t("team.linkToMe")}
+                  </button>
+                </form>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -88,14 +120,14 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
             type="text"
             required
             placeholder={t("team.firstName")}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
           />
           <input
             name="lastName"
             type="text"
             required
             placeholder={t("team.lastName")}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
           />
         </div>
         <input

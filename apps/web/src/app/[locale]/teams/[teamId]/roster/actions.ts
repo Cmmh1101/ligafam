@@ -24,3 +24,42 @@ export async function addPlayerAction(locale: string, teamId: string, formData: 
 
   revalidatePath(`/${locale}/teams/${teamId}/roster`);
 }
+
+// Lets an admin link themselves to a player too, so they can RSVP for their
+// own kid on top of managing the team -- distinct from the join flow, which
+// explicitly blocks admin from self-service family linking
+// (ADMIN_NOT_ALLOWED_VIA_JOIN). Relies on the existing "family_links:
+// admins manage" RLS policy (is_team_admin check, no role restriction on
+// which team_member_id it applies to) -- no migration needed.
+export async function toggleSelfLinkAction(locale: string, teamId: string, playerId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: membership } = await supabase
+    .from("team_members")
+    .select("id")
+    .eq("team_id", teamId)
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .eq("status", "approved")
+    .maybeSingle();
+  if (!membership) return;
+
+  const { data: existing } = await supabase
+    .from("family_links")
+    .select("id")
+    .eq("team_member_id", membership.id)
+    .eq("player_id", playerId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("family_links").delete().eq("id", existing.id);
+  } else {
+    await supabase.from("family_links").insert({ team_member_id: membership.id, player_id: playerId });
+  }
+
+  revalidatePath(`/${locale}/teams/${teamId}/roster`);
+}

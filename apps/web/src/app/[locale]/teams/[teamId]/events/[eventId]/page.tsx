@@ -57,8 +57,16 @@ export default async function EventDetailPage({
   // --- RSVP section: roster-driven, LEFT JOIN'd against event_rsvps in JS
   // (not a single PostgREST query) so a player added to the roster after
   // this event existed still shows up as no_response instead of vanishing.
+  //
+  // myLinkedPlayerIds is independent of role: owns_player_via_family() (the
+  // RLS check backing the RsvpToggle's upsert) never checks role, only that
+  // the caller's own team_member row has a family_links entry for that
+  // player. An admin can link themselves to a player on the roster page
+  // just like a family member can, so they get the same toggle for their
+  // own linked player(s) here, alongside read-only status for everyone else.
   type RosterRow = { player_id: string; first_name: string; last_name: string; status: RsvpStatus };
   let rosterRows: RosterRow[] = [];
+  let myLinkedPlayerIds = new Set<string>();
 
   if (event.type !== "other" && (isApprovedAdmin || isApprovedFamily)) {
     const { data: season } = await supabase
@@ -70,12 +78,16 @@ export default async function EventDetailPage({
 
     let playerIds: string[] | null = null;
 
-    if (isApprovedFamily && membership) {
+    if (membership) {
       const { data: links } = await supabase
         .from("family_links")
         .select("player_id")
         .eq("team_member_id", membership.id);
-      playerIds = (links ?? []).map((l) => l.player_id);
+      const linkedIds = (links ?? []).map((l) => l.player_id);
+      myLinkedPlayerIds = new Set(linkedIds);
+      if (isApprovedFamily) {
+        playerIds = linkedIds;
+      }
     }
 
     if (season && (isApprovedAdmin || (playerIds && playerIds.length > 0))) {
@@ -163,7 +175,7 @@ export default async function EventDetailPage({
                   <span className="text-slate-900">
                     {row.first_name} {row.last_name}
                   </span>
-                  {isApprovedFamily ? (
+                  {myLinkedPlayerIds.has(row.player_id) ? (
                     <RsvpToggle
                       eventId={eventId}
                       playerId={row.player_id}
@@ -209,7 +221,7 @@ export default async function EventDetailPage({
                 type="text"
                 required
                 placeholder={t("snacks.itemPlaceholder")}
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
               />
               <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
                 {t("snacks.claim")}
