@@ -13,7 +13,11 @@ export function SignInForm() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [mode, setMode] = useState<Mode>("phone");
+  // Phone sign-in is hidden until an SMS provider is configured in Supabase
+  // (see architecture-plan.md) -- the UI below never offers a way to switch
+  // to "phone", but the code path is left in place so re-enabling it later
+  // is just restoring the toggle button, not rebuilding this form.
+  const [mode] = useState<Mode>("email");
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("enter");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -21,11 +25,6 @@ export function SignInForm() {
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function switchMode(next: Mode) {
-    setMode(next);
-    setError(null);
-  }
 
   async function sendPhoneCode(e: FormEvent) {
     e.preventDefault();
@@ -173,14 +172,6 @@ export function SignInForm() {
         {t("or")}
         <div className="h-px flex-1 bg-slate-200" />
       </div>
-
-      <button
-        type="button"
-        onClick={() => switchMode(mode === "phone" ? "email" : "phone")}
-        className="rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-      >
-        {mode === "phone" ? t("continueWithEmail") : t("continueWithPhone")}
-      </button>
 
       <button
         type="button"

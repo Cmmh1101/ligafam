@@ -29,7 +29,8 @@
     "invalidCode": "Invalid code, please try again",
     "genericError": "Something went wrong, please try again",
     "signOut": "Sign out",
-    "or": "or"
+    "or": "or",
+    "newHereHint": "First time here? Enter your email and we'll create your account automatically."
   },
   "roles": {
     "admin": "Admin",

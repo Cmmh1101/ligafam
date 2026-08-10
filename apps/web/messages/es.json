@@ -29,7 +29,8 @@
     "invalidCode": "Código inválido, intenta de nuevo",
     "genericError": "Algo salió mal, intenta de nuevo",
     "signOut": "Cerrar sesión",
-    "or": "o"
+    "or": "o",
+    "newHereHint": "¿Primera vez aquí? Ingresa tu correo y crearemos tu cuenta automáticamente."
   },
   "roles": {
     "admin": "Administrador",
