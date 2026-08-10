@@ -19,6 +19,7 @@ export async function createTeamAction(locale: string, formData: FormData) {
   });
 
   if (error || !data) {
+    console.error("[createTeamAction] create_team RPC failed:", error);
     redirect(`/${locale}/teams/new?error=${rpcErrorKey(error?.message)}`);
   }
 

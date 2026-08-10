@@ -76,6 +76,9 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
       <header className="flex flex-col gap-1">
+        <a href={`/${locale}`} className="text-sm text-slate-500 underline">
+          {t("common.myTeams")}
+        </a>
         <h1 className="text-xl font-semibold text-slate-900">{team.name}</h1>
         {team.age_group && <p className="text-sm text-slate-500">{team.age_group}</p>}
       </header>
