@@ -74,6 +74,39 @@
     "maybe": "Tal vez",
     "no_response": "Sin respuesta"
   },
+  "events": {
+    "title": "Calendario",
+    "createEvent": "Crear evento",
+    "noUpcomingEvents": "No hay próximos eventos",
+    "eventDetails": "Detalles del evento",
+    "notFound": "Evento no encontrado, o no eres miembro de este equipo",
+    "rsvpSection": "Asistencia",
+    "noRosterYet": "Aún no hay jugadores activos en el roster",
+    "type": {
+      "game": "Partido",
+      "practice": "Práctica",
+      "other": "Otro"
+    },
+    "fields": {
+      "type": "Tipo de evento",
+      "title": "Título",
+      "opponentName": "Equipo rival",
+      "opponentNameHint": "Opcional",
+      "location": "Lugar",
+      "startsAt": "Fecha y hora de inicio",
+      "endsAt": "Fecha y hora de fin",
+      "endsAtHint": "Opcional"
+    }
+  },
+  "snacks": {
+    "title": "Refrigerios",
+    "noSnacksYet": "Nadie se ha anotado todavía",
+    "addItem": "Anotarse para llevar algo",
+    "itemPlaceholder": "ej. Bebidas, snacks...",
+    "claim": "Anotarme",
+    "signedUpBy": "Anotado por",
+    "byAdmin": "Administrador"
+  },
   "positions": {
     "P": "Lanzador",
     "C": "Receptor",

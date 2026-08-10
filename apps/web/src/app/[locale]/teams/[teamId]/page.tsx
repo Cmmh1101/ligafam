@@ -37,6 +37,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const isApprovedMember = membership?.status === "approved";
   const isApprovedAdmin = membership?.role === "admin" && membership?.status === "approved";
 
   let pendingRequests: {
@@ -89,14 +90,28 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
         <p className="text-xs text-slate-500">{t("team.inviteCodeHint")}</p>
       </div>
 
-      {isApprovedAdmin && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-slate-500">{t("team.pendingRequests")}</h2>
-            <a href={`/${locale}/teams/${teamId}/roster`} className="text-sm text-slate-600 underline">
+      {isApprovedMember && (
+        <div className="flex gap-2">
+          <a
+            href={`/${locale}/teams/${teamId}/events`}
+            className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            {t("events.title")}
+          </a>
+          {isApprovedAdmin && (
+            <a
+              href={`/${locale}/teams/${teamId}/roster`}
+              className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
               {t("team.roster")}
             </a>
-          </div>
+          )}
+        </div>
+      )}
+
+      {isApprovedAdmin && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-slate-500">{t("team.pendingRequests")}</h2>
 
           {pendingRequests.length === 0 ? (
             <p className="text-slate-600">{t("team.noPendingRequests")}</p>

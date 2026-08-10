@@ -74,6 +74,39 @@
     "maybe": "Maybe",
     "no_response": "No response"
   },
+  "events": {
+    "title": "Calendar",
+    "createEvent": "Create event",
+    "noUpcomingEvents": "No upcoming events",
+    "eventDetails": "Event details",
+    "notFound": "Event not found, or you're not a member of this team",
+    "rsvpSection": "RSVP",
+    "noRosterYet": "No active roster players yet",
+    "type": {
+      "game": "Game",
+      "practice": "Practice",
+      "other": "Other"
+    },
+    "fields": {
+      "type": "Event type",
+      "title": "Title",
+      "opponentName": "Opponent",
+      "opponentNameHint": "Optional",
+      "location": "Location",
+      "startsAt": "Start date & time",
+      "endsAt": "End date & time",
+      "endsAtHint": "Optional"
+    }
+  },
+  "snacks": {
+    "title": "Snacks",
+    "noSnacksYet": "No one has signed up yet",
+    "addItem": "Sign up to bring something",
+    "itemPlaceholder": "e.g. Drinks, snacks...",
+    "claim": "Sign me up",
+    "signedUpBy": "Signed up by",
+    "byAdmin": "Admin"
+  },
   "positions": {
     "P": "Pitcher",
     "C": "Catcher",
