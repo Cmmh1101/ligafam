@@ -22,8 +22,6 @@ export default async function SignInPage({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
-      <h1 className="text-xl font-semibold text-slate-900">{t("signIn")}</h1>
-      <p className="text-sm text-slate-500">{t("newHereHint")}</p>
       {error && <p className="text-sm text-red-600">{t("genericError")}</p>}
       <SignInForm />
     </main>

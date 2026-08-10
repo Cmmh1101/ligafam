@@ -41,7 +41,7 @@ MVP = **Next.js PWA + Supabase**, web only, offline-capable, baseball only. Reac
 | PWA / offline | Serwist (maintained fork of next-pwa/Workbox) | Service worker + IndexedDB cache |
 | Local persistence | Dexie.js (IndexedDB wrapper) | Cache team/roster/calendar for offline read; outbox queue for offline writes |
 | Backend | Supabase (Postgres, Auth, Realtime, Storage, Edge Functions) | RLS-first security model |
-| Auth | Supabase Auth — phone OTP (primary) + email fallback + Google | Phone-first matters for this audience |
+| Auth | Supabase Auth — email+password + Google (primary); phone OTP deferred | Originally scoped phone-first (see below), but built as email+password + Google for MVP — magic-link/OTP kept hitting Supabase's built-in email rate limit during testing, and phone needs an SMS provider (Twilio et al.) not yet configured. Phone OTP code exists dormant in `sign-in-form.tsx` and can be re-enabled once a provider is set up; still the right long-term default for this audience once that's in place. |
 | Realtime | Supabase Realtime (Postgres CDC + Broadcast channels) | Live scoring & chat |
 | i18n | `next-intl` | Locale in URL or user preference; toggle stored per-user |
 | Push notifications | Web Push (VAPID) via Edge Function + `web-push` lib | RN will use Expo push later |
