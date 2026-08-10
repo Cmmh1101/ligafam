@@ -10,6 +10,7 @@ export type MemberStatus = "pending" | "approved" | "rejected" | "removed";
 export type EventType = "game" | "practice" | "other";
 export type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
 export type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
+export type AdminInviteStatus = "pending" | "accepted" | "revoked";
 
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
@@ -273,6 +274,30 @@ export type Database = {
         { season_id: string; wins: number; losses: number; ties: number; updated_at: string },
         { season_id: string; wins?: number; losses?: number; ties?: number; updated_at?: string }
       >;
+      admin_invites: TableDef<
+        {
+          id: string;
+          team_id: string;
+          invited_email: string;
+          token: string;
+          status: AdminInviteStatus;
+          invited_by: string | null;
+          created_at: string;
+          accepted_at: string | null;
+          accepted_by: string | null;
+        },
+        {
+          id?: string;
+          team_id: string;
+          invited_email: string;
+          token?: string;
+          status?: AdminInviteStatus;
+          invited_by?: string | null;
+          created_at?: string;
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -324,6 +349,22 @@ export type Database = {
         Args: { p_team_member_id: string };
         Returns: Database["public"]["Tables"]["team_members"]["Row"];
       };
+      create_admin_invite: {
+        Args: { p_team_id: string; p_email: string };
+        Returns: Database["public"]["Tables"]["admin_invites"]["Row"];
+      };
+      revoke_admin_invite: {
+        Args: { p_invite_id: string };
+        Returns: Database["public"]["Tables"]["admin_invites"]["Row"];
+      };
+      get_admin_invite: {
+        Args: { p_token: string };
+        Returns: { team_id: string; team_name: string; invited_email: string; status: AdminInviteStatus }[];
+      };
+      accept_admin_invite: {
+        Args: { p_token: string };
+        Returns: Database["public"]["Tables"]["team_members"]["Row"];
+      };
     };
     Enums: {
       team_role: TeamRole;
@@ -331,6 +372,9 @@ export type Database = {
       event_type: EventType;
       rsvp_status: RsvpStatus;
       game_status: GameStatus;
+      // admin_invites.status is a plain text + check constraint in the DB,
+      // not a real pg enum like the others above -- AdminInviteStatus is a
+      // TS-side convenience type only.
     };
   };
 };

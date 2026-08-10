@@ -6,19 +6,20 @@ import { SignInForm } from "@/components/auth/sign-in-form";
 export default async function SignInPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
+  const { error, next } = await searchParams;
+
   if (user) {
-    redirect("/");
+    redirect(next ?? "/");
   }
 
   const t = await getTranslations("auth");
-  const { error } = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">

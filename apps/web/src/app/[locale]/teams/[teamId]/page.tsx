@@ -1,9 +1,17 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { approveRequestAction, rejectRequestAction } from "./actions";
+import { createAdminInviteAction, revokeAdminInviteAction } from "./admin-invite/actions";
 
-export default async function TeamPage({ params }: { params: Promise<{ teamId: string }> }) {
+export default async function TeamPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ teamId: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { teamId } = await params;
   const locale = await getLocale();
   const supabase = await createClient();
@@ -16,6 +24,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
   }
 
   const t = await getTranslations();
+  const { error } = await searchParams;
 
   const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).maybeSingle();
 
@@ -101,8 +110,29 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
     });
   }
 
+  let adminInvites: {
+    id: string;
+    invited_email: string;
+    status: string;
+    token: string;
+  }[] = [];
+
+  if (isApprovedAdmin) {
+    const { data } = await supabase
+      .from("admin_invites")
+      .select("id, invited_email, status, token")
+      .eq("team_id", teamId)
+      .order("created_at", { ascending: false });
+    adminInvites = data ?? [];
+  }
+
+  const host = (await headers()).get("host");
+  const origin = host ? `${host.startsWith("localhost") ? "http" : "https"}://${host}` : "";
+
   const approveAction = approveRequestAction.bind(null, locale, teamId);
   const rejectAction = rejectRequestAction.bind(null, locale, teamId);
+  const createInvite = createAdminInviteAction.bind(null, locale, teamId);
+  const revokeInvite = revokeAdminInviteAction.bind(null, locale, teamId);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
@@ -113,6 +143,8 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
         <h1 className="text-xl font-semibold text-slate-900">{team.name}</h1>
         {team.age_group && <p className="text-sm text-slate-500">{team.age_group}</p>}
       </header>
+
+      {error && <p className="text-sm text-red-600">{t(error)}</p>}
 
       <div className="rounded-lg border border-slate-200 px-4 py-3">
         <p className="text-xs font-medium text-slate-500">{t("team.inviteCode")}</p>
@@ -189,6 +221,67 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
                 );
               })}
             </ul>
+          )}
+        </div>
+      )}
+
+      {isApprovedAdmin && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-slate-500">{t("team.inviteAdmin")}</h2>
+
+          <form action={createInvite} className="flex flex-col gap-2">
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder={t("team.inviteAdminEmailLabel")}
+              className="rounded-lg border border-slate-300 px-4 py-3"
+            />
+            <button type="submit" className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white">
+              {t("team.sendInvite")}
+            </button>
+          </form>
+
+          {adminInvites.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <h3 className="text-xs font-medium text-slate-500">{t("team.adminInvites")}</h3>
+              <ul className="flex flex-col gap-2">
+                {adminInvites.map((invite) => {
+                  const revokeWithId = revokeInvite.bind(null, invite.id);
+                  return (
+                    <li
+                      key={invite.id}
+                      className="flex flex-col gap-2 rounded-lg border border-slate-200 px-4 py-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-900">{invite.invited_email}</span>
+                        <span className="text-xs text-slate-500">
+                          {t(
+                            `team.inviteStatus${invite.status.charAt(0).toUpperCase()}${invite.status.slice(1)}`
+                          )}
+                        </span>
+                      </div>
+                      {invite.status === "pending" && (
+                        <>
+                          <p className="break-all rounded bg-slate-50 px-2 py-1 font-mono text-xs text-slate-600">
+                            {origin}/{locale}/admin-invite/{invite.token}
+                          </p>
+                          <p className="text-xs text-slate-500">{t("team.inviteLinkCreated")}</p>
+                          <form action={revokeWithId}>
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+                            >
+                              {t("team.revoke")}
+                            </button>
+                          </form>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </div>
       )}

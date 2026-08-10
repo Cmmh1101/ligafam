@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "register" | "forgot";
@@ -21,6 +21,7 @@ export function SignInForm() {
   const t = useTranslations("auth");
   const router = useRouter();
   const supabase = createClient();
+  const nextPath = useSearchParams().get("next") ?? "/";
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -60,7 +61,7 @@ export function SignInForm() {
       return;
     }
 
-    router.push("/");
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -88,7 +89,9 @@ export function SignInForm() {
     setError(null);
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+      }
     });
   }
 

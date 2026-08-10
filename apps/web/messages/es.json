@@ -74,7 +74,27 @@
     "noTeamsYet": "Aún no perteneces a ningún equipo",
     "linkToMe": "Vincularme",
     "linkedToMe": "Vinculado a mí",
-    "linkedTo": "Vinculado a"
+    "linkedTo": "Vinculado a",
+    "inviteAdmin": "Invitar administrador",
+    "inviteAdminEmailLabel": "Correo del invitado",
+    "sendInvite": "Enviar invitación",
+    "inviteLinkCreated": "Comparte este enlace con la persona invitada",
+    "adminInvites": "Invitaciones de administrador",
+    "noInvitesYet": "No hay invitaciones enviadas",
+    "inviteStatusPending": "Pendiente",
+    "inviteStatusAccepted": "Aceptada",
+    "inviteStatusRevoked": "Revocada",
+    "revoke": "Revocar"
+  },
+  "adminInvite": {
+    "title": "Invitación de administrador",
+    "description": "Fuiste invitado a ser administrador de {teamName}",
+    "signInPrompt": "Inicia sesión o crea una cuenta con {email} para continuar",
+    "wrongAccount": "Esta invitación es para {email}. Cierra sesión e inicia con esa cuenta.",
+    "accept": "Aceptar invitación",
+    "alreadyAccepted": "Esta invitación ya fue aceptada",
+    "revoked": "Esta invitación fue revocada",
+    "notFound": "Invitación no encontrada"
   },
   "rsvp": {
     "yes": "Asistirá",
@@ -146,6 +166,10 @@
     "requestNotFound": "Solicitud no encontrada",
     "requestNotPending": "Esta solicitud ya fue procesada",
     "gameNotFound": "Partido no encontrado",
-    "generic": "Algo salió mal, intenta de nuevo"
+    "generic": "Algo salió mal, intenta de nuevo",
+    "teamAdminLimitReached": "El equipo ya tiene el máximo de 3 administradores",
+    "inviteNotFound": "Invitación no encontrada",
+    "inviteNotPending": "Esta invitación ya no está disponible",
+    "inviteEmailMismatch": "Esta invitación es para otro correo"
   }
 }

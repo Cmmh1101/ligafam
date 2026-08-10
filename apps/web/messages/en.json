@@ -74,7 +74,27 @@
     "noTeamsYet": "You don't belong to any teams yet",
     "linkToMe": "Link to me",
     "linkedToMe": "Linked to me",
-    "linkedTo": "Linked to"
+    "linkedTo": "Linked to",
+    "inviteAdmin": "Invite admin",
+    "inviteAdminEmailLabel": "Invitee's email",
+    "sendInvite": "Send invite",
+    "inviteLinkCreated": "Share this link with the invited person",
+    "adminInvites": "Admin invites",
+    "noInvitesYet": "No invites sent yet",
+    "inviteStatusPending": "Pending",
+    "inviteStatusAccepted": "Accepted",
+    "inviteStatusRevoked": "Revoked",
+    "revoke": "Revoke"
+  },
+  "adminInvite": {
+    "title": "Admin invite",
+    "description": "You've been invited to be an admin of {teamName}",
+    "signInPrompt": "Sign in or create an account with {email} to continue",
+    "wrongAccount": "This invite is for {email}. Sign out and use that account.",
+    "accept": "Accept invite",
+    "alreadyAccepted": "This invite has already been accepted",
+    "revoked": "This invite was revoked",
+    "notFound": "Invite not found"
   },
   "rsvp": {
     "yes": "Attending",
@@ -146,6 +166,10 @@
     "requestNotFound": "Request not found",
     "requestNotPending": "This request has already been processed",
     "gameNotFound": "Game not found",
-    "generic": "Something went wrong, please try again"
+    "generic": "Something went wrong, please try again",
+    "teamAdminLimitReached": "The team already has the maximum of 3 admins",
+    "inviteNotFound": "Invite not found",
+    "inviteNotPending": "This invite is no longer available",
+    "inviteEmailMismatch": "This invite is for a different email"
   }
 }
