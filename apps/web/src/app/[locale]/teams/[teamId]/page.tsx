@@ -45,6 +45,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
     role: string;
     fullName: string;
     phone: string | null;
+    linkedPlayerNames: string[];
   }[] = [];
 
   if (isApprovedAdmin) {
@@ -56,18 +57,47 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
       .order("requested_at", { ascending: true });
 
     const userIds = (pendingRows ?? []).map((r) => r.user_id);
+    const memberIds = (pendingRows ?? []).map((r) => r.id);
 
     const { data: profileRows } =
       userIds.length > 0
         ? await supabase.from("profiles").select("id, full_name, phone").in("id", userIds)
         : { data: [] };
 
+    // family_links are materialized at request time (before approval) --
+    // showing who a pending request claims to be tied to is exactly what
+    // lets an admin catch an impersonation attempt before granting access.
+    const { data: linkRows } =
+      memberIds.length > 0
+        ? await supabase
+            .from("family_links")
+            .select("team_member_id, players(first_name, last_name)")
+            .in("team_member_id", memberIds)
+        : { data: [] };
+
+    const playerNamesByMember = new Map<string, string[]>();
+    for (const row of linkRows ?? []) {
+      const player = row.players as unknown as { first_name: string; last_name: string } | null;
+      if (!player) continue;
+      const names = playerNamesByMember.get(row.team_member_id) ?? [];
+      names.push(`${player.first_name} ${player.last_name}`);
+      playerNamesByMember.set(row.team_member_id, names);
+    }
+
     const profileById = new Map((profileRows ?? []).map((p) => [p.id, p]));
 
     pendingRequests = (pendingRows ?? []).flatMap((r) => {
       const profile = profileById.get(r.user_id);
       if (!profile) return [];
-      return [{ id: r.id, role: r.role, fullName: profile.full_name, phone: profile.phone }];
+      return [
+        {
+          id: r.id,
+          role: r.role,
+          fullName: profile.full_name,
+          phone: profile.phone,
+          linkedPlayerNames: playerNamesByMember.get(r.id) ?? []
+        }
+      ];
     });
   }
 
@@ -131,6 +161,11 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
                         {t(`roles.${request.role}`)}
                         {request.phone ? ` · ${request.phone}` : ""}
                       </span>
+                      {request.linkedPlayerNames.length > 0 && (
+                        <span className="text-xs font-medium text-slate-600">
+                          {t("team.linkedTo")}: {request.linkedPlayerNames.join(", ")}
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <form action={approveWithId}>

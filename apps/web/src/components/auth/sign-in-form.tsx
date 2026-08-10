@@ -24,6 +24,7 @@ export function SignInForm() {
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,15 @@ export function SignInForm() {
     const { error } =
       mode === "login"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            // handle_new_user() (supabase/migrations/0001_init_schema.sql)
+            // reads raw_user_meta_data->>'full_name' into profiles.full_name
+            // -- without this, admins reviewing join requests see a blank
+            // name for every password-registered user.
+            options: { data: { full_name: fullName.trim() } }
+          });
 
     setLoading(false);
     if (error) {
@@ -134,6 +143,23 @@ export function SignInForm() {
       </h1>
 
       <form onSubmit={submit} className="flex flex-col gap-2">
+        {mode === "register" && (
+          <>
+            <label className="text-sm font-medium text-slate-700" htmlFor="fullName">
+              {t("fullName")}
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              autoComplete="name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="rounded-lg border border-slate-300 px-4 py-3"
+            />
+          </>
+        )}
+
         <label className="text-sm font-medium text-slate-700" htmlFor="email">
           {t("emailAddress")}
         </label>

@@ -16,6 +16,7 @@
     "signIn": "Iniciar sesión",
     "signUp": "Crear cuenta",
     "emailAddress": "Correo electrónico",
+    "fullName": "Nombre completo",
     "password": "Contraseña",
     "passwordHint": "Mínimo 6 caracteres",
     "needAccount": "¿No tienes cuenta? Regístrate",
@@ -72,7 +73,8 @@
     "viewTeam": "Ver equipo",
     "noTeamsYet": "Aún no perteneces a ningún equipo",
     "linkToMe": "Vincularme",
-    "linkedToMe": "Vinculado a mí"
+    "linkedToMe": "Vinculado a mí",
+    "linkedTo": "Vinculado a"
   },
   "rsvp": {
     "yes": "Asistirá",

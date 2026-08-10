@@ -16,6 +16,7 @@
     "signIn": "Sign in",
     "signUp": "Create account",
     "emailAddress": "Email address",
+    "fullName": "Full name",
     "password": "Password",
     "passwordHint": "At least 6 characters",
     "needAccount": "Don't have an account? Sign up",
@@ -72,7 +73,8 @@
     "viewTeam": "View team",
     "noTeamsYet": "You don't belong to any teams yet",
     "linkToMe": "Link to me",
-    "linkedToMe": "Linked to me"
+    "linkedToMe": "Linked to me",
+    "linkedTo": "Linked to"
   },
   "rsvp": {
     "yes": "Attending",
