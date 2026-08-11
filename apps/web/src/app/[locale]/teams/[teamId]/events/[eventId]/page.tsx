@@ -34,12 +34,12 @@ export default async function EventDetailPage({
 
   if (!event) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
+      <div className="flex flex-col gap-4">
         <p className="text-slate-600">{t("events.notFound")}</p>
         <a href={`/${locale}/teams/${teamId}/events`} className="text-sm text-slate-500 underline">
           {t("common.back")}
         </a>
-      </main>
+      </div>
     );
   }
 
@@ -156,11 +156,8 @@ export default async function EventDetailPage({
   const deleteSnack = deleteSnackAction.bind(null, locale, teamId, eventId);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
+    <>
       <header className="flex flex-col gap-1">
-        <a href={`/${locale}/teams/${teamId}/events`} className="text-sm text-slate-500 underline">
-          {t("events.title")}
-        </a>
         <h1 className="text-xl font-semibold text-slate-900">
           {event.title || event.opponent_name || t(`events.type.${event.type}`)}
         </h1>
@@ -254,6 +251,6 @@ export default async function EventDetailPage({
           )}
         </div>
       )}
-    </main>
+    </>
   );
 }

@@ -17,17 +17,10 @@ export default async function NewEventPage({ params }: { params: Promise<{ teamI
 
   const t = await getTranslations();
 
-  const { data: team } = await supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle();
+  const { data: team } = await supabase.from("teams").select("id").eq("id", teamId).maybeSingle();
 
   if (!team) {
-    return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
-        <p className="text-slate-600">{t("team.notFoundOrNotMember")}</p>
-        <a href={`/${locale}`} className="text-sm text-slate-500 underline">
-          {t("common.back")}
-        </a>
-      </main>
-    );
+    return <p className="text-slate-600">{t("team.notFoundOrNotMember")}</p>;
   }
 
   const { data: membership } = await supabase
@@ -46,13 +39,8 @@ export default async function NewEventPage({ params }: { params: Promise<{ teamI
   const createEvent = createEventAction.bind(null, locale, teamId);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
-      <header className="flex flex-col gap-1">
-        <a href={`/${locale}/teams/${teamId}/events`} className="text-sm text-slate-500 underline">
-          {t("events.title")}
-        </a>
-        <h1 className="text-xl font-semibold text-slate-900">{t("events.createEvent")}</h1>
-      </header>
+    <>
+      <h1 className="text-xl font-semibold text-slate-900">{t("events.createEvent")}</h1>
 
       <form action={createEvent} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
@@ -133,6 +121,6 @@ export default async function NewEventPage({ params }: { params: Promise<{ teamI
           {t("events.createEvent")}
         </button>
       </form>
-    </main>
+    </>
   );
 }

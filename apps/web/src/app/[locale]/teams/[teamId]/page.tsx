@@ -26,17 +26,14 @@ export default async function TeamPage({
   const t = await getTranslations();
   const { error } = await searchParams;
 
+  // Team existence + membership are already validated by the parent layout
+  // (layout.tsx) before this page ever renders -- still re-fetched here
+  // since layouts don't pass data down to pages, but the not-found branch
+  // is unreachable in practice and kept only as a defensive fallback.
   const { data: team } = await supabase.from("teams").select("*").eq("id", teamId).maybeSingle();
 
   if (!team) {
-    return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
-        <p className="text-slate-600">{t("team.notFoundOrNotMember")}</p>
-        <a href={`/${locale}`} className="text-sm text-slate-500 underline">
-          {t("common.back")}
-        </a>
-      </main>
-    );
+    return <p className="text-slate-600">{t("team.notFoundOrNotMember")}</p>;
   }
 
   const { data: membership } = await supabase
@@ -135,14 +132,8 @@ export default async function TeamPage({
   const revokeInvite = revokeAdminInviteAction.bind(null, locale, teamId);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
-      <header className="flex flex-col gap-1">
-        <a href={`/${locale}`} className="text-sm text-slate-500 underline">
-          {t("common.myTeams")}
-        </a>
-        <h1 className="text-xl font-semibold text-slate-900">{team.name}</h1>
-        {team.age_group && <p className="text-sm text-slate-500">{team.age_group}</p>}
-      </header>
+    <>
+      {team.age_group && <p className="text-sm text-slate-500">{team.age_group}</p>}
 
       {error && <p className="text-sm text-red-600">{t(error)}</p>}
 
@@ -151,25 +142,6 @@ export default async function TeamPage({
         <p className="font-mono text-lg text-slate-900">{team.invite_code}</p>
         <p className="text-xs text-slate-500">{t("team.inviteCodeHint")}</p>
       </div>
-
-      {isApprovedMember && (
-        <div className="flex gap-2">
-          <a
-            href={`/${locale}/teams/${teamId}/events`}
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            {t("events.title")}
-          </a>
-          {isApprovedAdmin && (
-            <a
-              href={`/${locale}/teams/${teamId}/roster`}
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              {t("team.roster")}
-            </a>
-          )}
-        </div>
-      )}
 
       {isApprovedAdmin && (
         <div className="flex flex-col gap-3">
@@ -285,6 +257,6 @@ export default async function TeamPage({
           )}
         </div>
       )}
-    </main>
+    </>
   );
 }
