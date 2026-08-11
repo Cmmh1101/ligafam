@@ -132,7 +132,7 @@
     "addItem": "Sign up to bring something",
     "itemPlaceholder": "e.g. Drinks, snacks...",
     "claim": "Sign me up",
-    "signedUpBy": "Signed up by",
+    "forPlayer": "For",
     "byAdmin": "Admin"
   },
   "positions": {

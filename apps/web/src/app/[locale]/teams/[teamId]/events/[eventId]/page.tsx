@@ -2,7 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatEventDateTime } from "@/lib/datetime";
-import { RsvpToggle } from "@/components/events/rsvp-toggle";
+import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
 import { claimSnackAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
@@ -126,21 +126,29 @@ export default async function EventDetailPage({
   }
 
   // --- Snacks section: everyone approved reads; admin/family can claim.
+  // Player name comes from family_links -> players (the specific kid that
+  // signup is tied to), not the signing-up adult's own name. This also
+  // avoids embedding through team_members -> profiles, which PostgREST
+  // rejects (PGRST201): team_members has two FKs to profiles (user_id and
+  // decided_by), so that embed is ambiguous and silently fails the whole
+  // query -- which is why the list was showing empty despite real rows
+  // existing.
   const { data: snackRows } = isApprovedMember
     ? await supabase
         .from("snack_assignments")
-        .select("id, item, family_link_id, family_links(team_members(profiles(full_name)))")
+        .select("id, item, family_link_id, family_links(players(first_name, last_name))")
         .eq("event_id", eventId)
+        .order("created_at", { ascending: true })
     : { data: [] };
 
   const snacks = (snackRows ?? []).map((row) => {
-    const claimerName = (
-      row.family_links as unknown as { team_members: { profiles: { full_name: string } | null } | null } | null
-    )?.team_members?.profiles?.full_name;
+    const player = (
+      row.family_links as unknown as { players: { first_name: string; last_name: string } | null } | null
+    )?.players;
     return {
       id: row.id as string,
       item: row.item as string,
-      claimerName: row.family_link_id ? claimerName || null : null
+      playerName: player ? `${player.first_name} ${player.last_name}` : null
     };
   });
 
@@ -183,7 +191,7 @@ export default async function EventDetailPage({
                       userId={user.id}
                     />
                   ) : (
-                    <span className="text-sm text-slate-500">{t(`rsvp.${row.status}`)}</span>
+                    <RsvpStatusBadge status={row.status} />
                   )}
                 </li>
               ))}
@@ -207,7 +215,7 @@ export default async function EventDetailPage({
                 >
                   <span className="text-slate-900">{snack.item}</span>
                   <span className="text-xs text-slate-500">
-                    {t("snacks.signedUpBy")}: {snack.claimerName || t("snacks.byAdmin")}
+                    {t("snacks.forPlayer")}: {snack.playerName || t("snacks.byAdmin")}
                   </span>
                 </li>
               ))}

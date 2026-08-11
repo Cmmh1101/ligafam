@@ -132,7 +132,7 @@
     "addItem": "Anotarse para llevar algo",
     "itemPlaceholder": "ej. Bebidas, snacks...",
     "claim": "Anotarme",
-    "signedUpBy": "Anotado por",
+    "forPlayer": "Para",
     "byAdmin": "Administrador"
   },
   "positions": {
