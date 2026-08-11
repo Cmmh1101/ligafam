@@ -3,7 +3,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { JoinTeamForm } from "@/components/teams/join-team-form";
 
-export default async function JoinTeamPage() {
+export default async function JoinTeamPage({
+  searchParams
+}: {
+  searchParams: Promise<{ teamId?: string; teamName?: string }>;
+}) {
   const locale = await getLocale();
   const supabase = await createClient();
   const {
@@ -15,11 +19,13 @@ export default async function JoinTeamPage() {
   }
 
   const t = await getTranslations();
+  const { teamId, teamName } = await searchParams;
+  const initialTeam = teamId && teamName ? { id: teamId, name: teamName } : undefined;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
       <h1 className="text-xl font-semibold text-slate-900">{t("team.joinTeam")}</h1>
-      <JoinTeamForm />
+      <JoinTeamForm initialTeam={initialTeam} />
     </main>
   );
 }

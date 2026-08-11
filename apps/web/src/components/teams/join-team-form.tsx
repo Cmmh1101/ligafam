@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
 
-type Step = "code" | "roster" | "done";
+type Step = "code" | "role" | "roster" | "done";
 type Role = "family" | "fan";
 
 type RosterPlayer = {
@@ -16,19 +16,26 @@ type RosterPlayer = {
   jersey_number: string | null;
 };
 
-export function JoinTeamForm() {
+export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name: string } }) {
   const t = useTranslations();
   const router = useRouter();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>("code");
+  const [step, setStep] = useState<Step>(initialTeam ? "role" : "code");
   const [inviteCode, setInviteCode] = useState("");
   const [role, setRole] = useState<Role>("family");
-  const [teamName, setTeamName] = useState("");
+  const [teamName, setTeamName] = useState(initialTeam?.name ?? "");
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Whichever source resolved the team -- search results already have a
+  // team_id (no code involved), a typed invite code doesn't. Every RPC call
+  // below picks whichever of these two is actually set.
+  const joinParams = initialTeam
+    ? { p_team_id: initialTeam.id }
+    : { p_invite_code: inviteCode.trim() };
 
   async function submitCode(e: FormEvent) {
     e.preventDefault();
@@ -41,22 +48,27 @@ export function JoinTeamForm() {
       p_invite_code: code
     });
 
+    setLoading(false);
     if (teamError) {
-      setLoading(false);
       setError(t(rpcErrorKey(teamError.message)));
       return;
     }
     if (!teamRows || teamRows.length === 0) {
-      setLoading(false);
       setError(t("errors.invalidInviteCode"));
       return;
     }
 
     setTeamName(teamRows[0].name);
+    setStep("role");
+  }
+
+  async function continueFromRole() {
+    setLoading(true);
+    setError(null);
 
     if (role === "fan") {
       const { error: joinError } = await supabase.rpc("request_to_join_team", {
-        p_invite_code: code,
+        ...joinParams,
         p_role: "fan"
       });
       setLoading(false);
@@ -68,9 +80,10 @@ export function JoinTeamForm() {
       return;
     }
 
-    const { data: rosterRows, error: rosterError } = await supabase.rpc("get_joinable_roster", {
-      p_invite_code: code
-    });
+    const { data: rosterRows, error: rosterError } = await supabase.rpc(
+      "get_joinable_roster",
+      joinParams
+    );
 
     setLoading(false);
     if (rosterError) {
@@ -94,7 +107,7 @@ export function JoinTeamForm() {
     setError(null);
 
     const { error: joinError } = await supabase.rpc("request_to_join_team", {
-      p_invite_code: inviteCode.trim(),
+      ...joinParams,
       p_role: "family",
       p_player_ids: selectedPlayerIds
     });
@@ -161,12 +174,64 @@ export function JoinTeamForm() {
         </button>
         <button
           type="button"
-          onClick={() => setStep("code")}
+          onClick={() => setStep("role")}
           className="text-sm text-slate-500 underline"
         >
           {t("common.back")}
         </button>
       </form>
+    );
+  }
+
+  if (step === "role") {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-slate-500">{teamName}</p>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium text-slate-700">{t("team.chooseRole")}</p>
+          <div className="flex gap-3">
+            <label className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-3">
+              <input
+                type="radio"
+                name="role"
+                checked={role === "family"}
+                onChange={() => setRole("family")}
+              />
+              {t("roles.family")}
+            </label>
+            <label className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-3">
+              <input
+                type="radio"
+                name="role"
+                checked={role === "fan"}
+                onChange={() => setRole("fan")}
+              />
+              {t("roles.fan")}
+            </label>
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={continueFromRole}
+          className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+        >
+          {t("common.continue")}
+        </button>
+        {!initialTeam && (
+          <button
+            type="button"
+            onClick={() => setStep("code")}
+            className="text-sm text-slate-500 underline"
+          >
+            {t("common.back")}
+          </button>
+        )}
+      </div>
     );
   }
 
@@ -184,30 +249,6 @@ export function JoinTeamForm() {
           onChange={(e) => setInviteCode(e.target.value)}
           className="rounded-lg border border-slate-300 px-4 py-3"
         />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-slate-700">{t("team.chooseRole")}</p>
-        <div className="flex gap-3">
-          <label className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-3">
-            <input
-              type="radio"
-              name="role"
-              checked={role === "family"}
-              onChange={() => setRole("family")}
-            />
-            {t("roles.family")}
-          </label>
-          <label className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-3">
-            <input
-              type="radio"
-              name="role"
-              checked={role === "fan"}
-              onChange={() => setRole("fan")}
-            />
-            {t("roles.fan")}
-          </label>
-        </div>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -329,7 +329,7 @@ export type Database = {
         >[];
       };
       get_joinable_roster: {
-        Args: { p_invite_code: string };
+        Args: { p_invite_code?: string | null; p_team_id?: string | null };
         Returns: {
           player_id: string;
           first_name: string;
@@ -338,8 +338,20 @@ export type Database = {
         }[];
       };
       request_to_join_team: {
-        Args: { p_invite_code: string; p_role: TeamRole; p_player_ids?: string[] | null };
+        Args: {
+          p_invite_code?: string | null;
+          p_role: TeamRole;
+          p_player_ids?: string[] | null;
+          p_team_id?: string | null;
+        };
         Returns: Database["public"]["Tables"]["team_members"]["Row"];
+      };
+      search_teams: {
+        Args: { p_query: string };
+        Returns: Pick<
+          Database["public"]["Tables"]["teams"]["Row"],
+          "id" | "name" | "sport" | "age_group"
+        >[];
       };
       approve_join_request: {
         Args: { p_team_member_id: string };

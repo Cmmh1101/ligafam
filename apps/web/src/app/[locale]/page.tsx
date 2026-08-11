@@ -106,6 +106,12 @@ export default async function HomePage() {
             >
               {t("team.joinTeam")}
             </a>
+            <a
+              href={`/${locale}/teams/search`}
+              className="rounded-lg border border-slate-300 px-4 py-3 text-center font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {t("team.searchTeams")}
+            </a>
           </div>
 
           <SignOutButton />
