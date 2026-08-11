@@ -16,6 +16,18 @@ const SELECTED_CLASSES: Record<RsvpOption, string> = {
   maybe: "border-amber-500 bg-amber-500 text-white"
 };
 
+// Deliberately NOT the same solid-filled look as the interactive toggle's
+// selected state -- outline-only, no fill, so it reads as "status display"
+// rather than "button you can press." Solid vs. outline was previously the
+// same shape/color for both, which is exactly what caused a real user to
+// think they had an active link to a player they'd actually never linked
+// to -- they were seeing someone else's read-only status.
+const OUTLINE_CLASSES: Record<RsvpOption, string> = {
+  yes: "border-emerald-600 text-emerald-600",
+  no: "border-red-600 text-red-600",
+  maybe: "border-amber-500 text-amber-500"
+};
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
@@ -72,7 +84,7 @@ export function RsvpStatusBadge({ status }: { status: RsvpStatus }) {
     <span
       title={t(status)}
       aria-label={t(status)}
-      className={`flex h-8 w-8 items-center justify-center rounded-full border ${SELECTED_CLASSES[status]}`}
+      className={`flex h-8 w-8 cursor-default items-center justify-center rounded-full border bg-white ${OUTLINE_CLASSES[status]}`}
     >
       <Icon />
     </span>
