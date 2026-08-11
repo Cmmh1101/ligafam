@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatEventDateTime } from "@/lib/datetime";
 import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
-import { claimSnackAction } from "./actions";
+import { claimSnackAction, deleteSnackAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
 
@@ -54,19 +54,29 @@ export default async function EventDetailPage({
   const isApprovedAdmin = isApprovedMember && membership?.role === "admin";
   const isApprovedFamily = isApprovedMember && membership?.role === "family";
 
+  // The caller's own family_links, fetched once regardless of event type or
+  // role -- owns_player_via_family() (backing both the RSVP upsert and the
+  // snack RLS policies) never checks role, only that the caller's own
+  // team_member row has a family_links entry. Used for the RSVP toggle
+  // (by player_id) and for which snacks the caller is allowed to delete
+  // (by family_link id).
+  let myLinkedPlayerIds = new Set<string>();
+  let myFamilyLinkIds = new Set<string>();
+
+  if (isApprovedMember && membership) {
+    const { data: links } = await supabase
+      .from("family_links")
+      .select("id, player_id")
+      .eq("team_member_id", membership.id);
+    myLinkedPlayerIds = new Set((links ?? []).map((l) => l.player_id));
+    myFamilyLinkIds = new Set((links ?? []).map((l) => l.id));
+  }
+
   // --- RSVP section: roster-driven, LEFT JOIN'd against event_rsvps in JS
   // (not a single PostgREST query) so a player added to the roster after
   // this event existed still shows up as no_response instead of vanishing.
-  //
-  // myLinkedPlayerIds is independent of role: owns_player_via_family() (the
-  // RLS check backing the RsvpToggle's upsert) never checks role, only that
-  // the caller's own team_member row has a family_links entry for that
-  // player. An admin can link themselves to a player on the roster page
-  // just like a family member can, so they get the same toggle for their
-  // own linked player(s) here, alongside read-only status for everyone else.
   type RosterRow = { player_id: string; first_name: string; last_name: string; status: RsvpStatus };
   let rosterRows: RosterRow[] = [];
-  let myLinkedPlayerIds = new Set<string>();
 
   if (event.type !== "other" && (isApprovedAdmin || isApprovedFamily)) {
     const { data: season } = await supabase
@@ -76,19 +86,7 @@ export default async function EventDetailPage({
       .eq("is_active", true)
       .maybeSingle();
 
-    let playerIds: string[] | null = null;
-
-    if (membership) {
-      const { data: links } = await supabase
-        .from("family_links")
-        .select("player_id")
-        .eq("team_member_id", membership.id);
-      const linkedIds = (links ?? []).map((l) => l.player_id);
-      myLinkedPlayerIds = new Set(linkedIds);
-      if (isApprovedFamily) {
-        playerIds = linkedIds;
-      }
-    }
+    const playerIds = isApprovedFamily ? Array.from(myLinkedPlayerIds) : null;
 
     if (season && (isApprovedAdmin || (playerIds && playerIds.length > 0))) {
       let rosterQuery = supabase
@@ -145,14 +143,17 @@ export default async function EventDetailPage({
     const player = (
       row.family_links as unknown as { players: { first_name: string; last_name: string } | null } | null
     )?.players;
+    const familyLinkId = row.family_link_id as string | null;
     return {
       id: row.id as string,
       item: row.item as string,
-      playerName: player ? `${player.first_name} ${player.last_name}` : null
+      playerName: player ? `${player.first_name} ${player.last_name}` : null,
+      canDelete: isApprovedAdmin || (familyLinkId !== null && myFamilyLinkIds.has(familyLinkId))
     };
   });
 
   const claimSnack = claimSnackAction.bind(null, locale, teamId, eventId);
+  const deleteSnack = deleteSnackAction.bind(null, locale, teamId, eventId);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
@@ -208,17 +209,32 @@ export default async function EventDetailPage({
             <p className="text-slate-600">{t("snacks.noSnacksYet")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {snacks.map((snack) => (
-                <li
-                  key={snack.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
-                >
-                  <span className="text-slate-900">{snack.item}</span>
-                  <span className="text-xs text-slate-500">
-                    {t("snacks.forPlayer")}: {snack.playerName || t("snacks.byAdmin")}
-                  </span>
-                </li>
-              ))}
+              {snacks.map((snack) => {
+                const deleteThisSnack = deleteSnack.bind(null, snack.id);
+                return (
+                  <li
+                    key={snack.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-4 py-3"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-slate-900">{snack.item}</span>
+                      <span className="text-xs text-slate-500">
+                        {t("snacks.forPlayer")}: {snack.playerName || t("snacks.byAdmin")}
+                      </span>
+                    </div>
+                    {snack.canDelete && (
+                      <form action={deleteThisSnack}>
+                        <button
+                          type="submit"
+                          className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+                        >
+                          {t("common.delete")}
+                        </button>
+                      </form>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
 
