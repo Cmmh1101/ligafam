@@ -18,7 +18,8 @@ const RPC_ERROR_KEYS: Record<string, string> = {
   TEAM_ADMIN_LIMIT_REACHED: "errors.teamAdminLimitReached",
   INVITE_NOT_FOUND: "errors.inviteNotFound",
   INVITE_NOT_PENDING: "errors.inviteNotPending",
-  INVITE_EMAIL_MISMATCH: "errors.inviteEmailMismatch"
+  INVITE_EMAIL_MISMATCH: "errors.inviteEmailMismatch",
+  GAME_ALREADY_FINAL: "errors.gameAlreadyFinal"
 };
 
 export function rpcErrorKey(message: string | undefined | null): string {

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatEventDateTime } from "@/lib/datetime";
 import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
+import { GameScorePanel } from "@/components/games/game-score-panel";
 import { claimSnackAction, deleteSnackAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
@@ -71,6 +72,19 @@ export default async function EventDetailPage({
     myLinkedPlayerIds = new Set((links ?? []).map((l) => l.player_id));
     myFamilyLinkIds = new Set((links ?? []).map((l) => l.id));
   }
+
+  // --- Live scoring section: only queried for game-type events, and only
+  // for approved members (matches the read-access role table: fan/family
+  // get read-only scores, admin gets read/write via GameScorePanel's own
+  // admin-gated controls).
+  const { data: game } =
+    event.type === "game" && isApprovedMember
+      ? await supabase
+          .from("games")
+          .select("id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes")
+          .eq("event_id", eventId)
+          .maybeSingle()
+      : { data: null };
 
   // --- RSVP section: roster-driven, LEFT JOIN'd against event_rsvps in JS
   // (not a single PostgREST query) so a player added to the roster after
@@ -196,6 +210,15 @@ export default async function EventDetailPage({
             </ul>
           )}
         </div>
+      )}
+
+      {event.type === "game" && isApprovedMember && (
+        <GameScorePanel
+          eventId={eventId}
+          initialGame={game}
+          isApprovedAdmin={isApprovedAdmin}
+          opponentName={event.opponent_name}
+        />
       )}
 
       {isApprovedMember && (

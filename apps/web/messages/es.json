@@ -159,7 +159,20 @@
     "scheduled": "Programado",
     "inning": "Entrada",
     "top": "Alta",
-    "bottom": "Baja"
+    "bottom": "Baja",
+    "title": "Marcador en vivo",
+    "us": "Nosotros",
+    "opponent": "Rival",
+    "count": "Cuenta",
+    "outs": "Outs",
+    "startGame": "Iniciar partido",
+    "finalizeGame": "Finalizar partido",
+    "notStartedYet": "El partido aún no ha comenzado",
+    "addRunUs": "+1 carrera (nosotros)",
+    "addRunOpponent": "+1 carrera (rival)",
+    "ball": "Bola",
+    "strike": "Strike",
+    "out": "Out"
   },
   "errors": {
     "notAuthenticated": "Debes iniciar sesión para continuar",
@@ -177,6 +190,7 @@
     "teamAdminLimitReached": "El equipo ya tiene el máximo de 3 administradores",
     "inviteNotFound": "Invitación no encontrada",
     "inviteNotPending": "Esta invitación ya no está disponible",
-    "inviteEmailMismatch": "Esta invitación es para otro correo"
+    "inviteEmailMismatch": "Esta invitación es para otro correo",
+    "gameAlreadyFinal": "Este partido ya finalizó"
   }
 }

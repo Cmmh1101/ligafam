@@ -210,6 +210,9 @@ export type Database = {
           opponent_score: number;
           current_inning: number;
           inning_half: string | null;
+          outs: number;
+          balls: number;
+          strikes: number;
           started_at: string | null;
           ended_at: string | null;
         },
@@ -222,6 +225,9 @@ export type Database = {
           opponent_score?: number;
           current_inning?: number;
           inning_half?: string | null;
+          outs?: number;
+          balls?: number;
+          strikes?: number;
           started_at?: string | null;
           ended_at?: string | null;
         }
@@ -308,12 +314,22 @@ export type Database = {
       record_score_event: {
         Args: {
           p_game_id: string;
-          p_inning: number;
-          p_inning_half: string;
           p_runs: number;
           p_scoring_team: string;
           p_note?: string | null;
         };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      record_count_event: {
+        Args: { p_game_id: string; p_event_type: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      start_game: {
+        Args: { p_event_id: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      finalize_game: {
+        Args: { p_game_id: string };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };

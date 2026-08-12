@@ -159,7 +159,20 @@
     "scheduled": "Scheduled",
     "inning": "Inning",
     "top": "Top",
-    "bottom": "Bottom"
+    "bottom": "Bottom",
+    "title": "Live scoreboard",
+    "us": "Us",
+    "opponent": "Opponent",
+    "count": "Count",
+    "outs": "Outs",
+    "startGame": "Start game",
+    "finalizeGame": "Finalize game",
+    "notStartedYet": "The game hasn't started yet",
+    "addRunUs": "+1 run (us)",
+    "addRunOpponent": "+1 run (opponent)",
+    "ball": "Ball",
+    "strike": "Strike",
+    "out": "Out"
   },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",
@@ -177,6 +190,7 @@
     "teamAdminLimitReached": "The team already has the maximum of 3 admins",
     "inviteNotFound": "Invite not found",
     "inviteNotPending": "This invite is no longer available",
-    "inviteEmailMismatch": "This invite is for a different email"
+    "inviteEmailMismatch": "This invite is for a different email",
+    "gameAlreadyFinal": "This game has already finished"
   }
 }
