@@ -91,7 +91,10 @@
     "inviteStatusPending": "Pending",
     "inviteStatusAccepted": "Accepted",
     "inviteStatusRevoked": "Revoked",
-    "revoke": "Revoke"
+    "revoke": "Revoke",
+    "currentAdmins": "Current admins",
+    "removeAdmin": "Remove admin",
+    "you": "you"
   },
   "adminInvite": {
     "title": "Admin invite",
@@ -212,6 +215,8 @@
     "inviteNotFound": "Invite not found",
     "inviteNotPending": "This invite is no longer available",
     "inviteEmailMismatch": "This invite is for a different email",
-    "gameAlreadyFinal": "This game has already finished"
+    "gameAlreadyFinal": "This game has already finished",
+    "adminNotFound": "Admin not found",
+    "cannotRemoveSelf": "You can't remove yourself as admin"
   }
 }

@@ -91,7 +91,10 @@
     "inviteStatusPending": "Pendiente",
     "inviteStatusAccepted": "Aceptada",
     "inviteStatusRevoked": "Revocada",
-    "revoke": "Revocar"
+    "revoke": "Revocar",
+    "currentAdmins": "Administradores actuales",
+    "removeAdmin": "Quitar administrador",
+    "you": "tú"
   },
   "adminInvite": {
     "title": "Invitación de administrador",
@@ -212,6 +215,8 @@
     "inviteNotFound": "Invitación no encontrada",
     "inviteNotPending": "Esta invitación ya no está disponible",
     "inviteEmailMismatch": "Esta invitación es para otro correo",
-    "gameAlreadyFinal": "Este partido ya finalizó"
+    "gameAlreadyFinal": "Este partido ya finalizó",
+    "adminNotFound": "Administrador no encontrado",
+    "cannotRemoveSelf": "No puedes quitarte a ti mismo como administrador"
   }
 }

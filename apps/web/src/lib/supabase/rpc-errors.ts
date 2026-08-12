@@ -19,7 +19,9 @@ const RPC_ERROR_KEYS: Record<string, string> = {
   INVITE_NOT_FOUND: "errors.inviteNotFound",
   INVITE_NOT_PENDING: "errors.inviteNotPending",
   INVITE_EMAIL_MISMATCH: "errors.inviteEmailMismatch",
-  GAME_ALREADY_FINAL: "errors.gameAlreadyFinal"
+  GAME_ALREADY_FINAL: "errors.gameAlreadyFinal",
+  ADMIN_NOT_FOUND: "errors.adminNotFound",
+  CANNOT_REMOVE_SELF: "errors.cannotRemoveSelf"
 };
 
 export function rpcErrorKey(message: string | undefined | null): string {

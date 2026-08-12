@@ -450,6 +450,11 @@ export type Database = {
         Args: { p_token: string };
         Returns: Database["public"]["Tables"]["team_members"]["Row"];
       };
+      is_team_creator: { Args: { p_team_id: string }; Returns: boolean };
+      remove_team_admin: {
+        Args: { p_team_member_id: string };
+        Returns: Database["public"]["Tables"]["team_members"]["Row"];
+      };
     };
     Enums: {
       team_role: TeamRole;

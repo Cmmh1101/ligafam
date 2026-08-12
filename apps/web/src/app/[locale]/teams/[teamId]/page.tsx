@@ -2,7 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { approveRequestAction, rejectRequestAction } from "./actions";
+import { approveRequestAction, rejectRequestAction, removeAdminAction } from "./actions";
 import { createAdminInviteAction, revokeAdminInviteAction } from "./admin-invite/actions";
 
 export default async function TeamPage({
@@ -45,6 +45,7 @@ export default async function TeamPage({
 
   const isApprovedMember = membership?.status === "approved";
   const isApprovedAdmin = membership?.role === "admin" && membership?.status === "approved";
+  const isCreator = team.created_by === user.id;
 
   let pendingRequests: {
     id: string;
@@ -123,6 +124,32 @@ export default async function TeamPage({
     adminInvites = data ?? [];
   }
 
+  let currentAdmins: { id: string; user_id: string; fullName: string }[] = [];
+
+  if (isCreator) {
+    const { data: adminRows } = await supabase
+      .from("team_members")
+      .select("id, user_id")
+      .eq("team_id", teamId)
+      .eq("role", "admin")
+      .eq("status", "approved")
+      .order("decided_at", { ascending: true });
+
+    const adminUserIds = (adminRows ?? []).map((r) => r.user_id);
+    const { data: adminProfileRows } =
+      adminUserIds.length > 0
+        ? await supabase.from("profiles").select("id, full_name").in("id", adminUserIds)
+        : { data: [] };
+
+    const adminProfileById = new Map((adminProfileRows ?? []).map((p) => [p.id, p]));
+
+    currentAdmins = (adminRows ?? []).flatMap((r) => {
+      const profile = adminProfileById.get(r.user_id);
+      if (!profile) return [];
+      return [{ id: r.id, user_id: r.user_id, fullName: profile.full_name }];
+    });
+  }
+
   const host = (await headers()).get("host");
   const origin = host ? `${host.startsWith("localhost") ? "http" : "https"}://${host}` : "";
 
@@ -130,6 +157,7 @@ export default async function TeamPage({
   const rejectAction = rejectRequestAction.bind(null, locale, teamId);
   const createInvite = createAdminInviteAction.bind(null, locale, teamId);
   const revokeInvite = revokeAdminInviteAction.bind(null, locale, teamId);
+  const removeAdmin = removeAdminAction.bind(null, locale, teamId);
 
   return (
     <>
@@ -255,6 +283,40 @@ export default async function TeamPage({
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {isCreator && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-slate-500">{t("team.currentAdmins")}</h2>
+
+          <ul className="flex flex-col gap-2">
+            {currentAdmins.map((admin) => {
+              const isSelf = admin.user_id === user.id;
+              const removeWithId = removeAdmin.bind(null, admin.id);
+              return (
+                <li
+                  key={admin.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
+                >
+                  <span className="text-slate-900">
+                    {admin.fullName}
+                    {isSelf ? ` (${t("team.you")})` : ""}
+                  </span>
+                  {!isSelf && (
+                    <form action={removeWithId}>
+                      <button
+                        type="submit"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+                      >
+                        {t("team.removeAdmin")}
+                      </button>
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
     </>
