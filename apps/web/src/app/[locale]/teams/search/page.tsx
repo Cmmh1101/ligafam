@@ -23,6 +23,9 @@ export default async function SearchTeamsPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
+      <a href={`/${locale}`} className="text-sm text-slate-500 underline">
+        {t("common.back")}
+      </a>
       <h1 className="text-xl font-semibold text-slate-900">{t("team.searchTeams")}</h1>
       <SearchTeamsForm
         locale={locale}

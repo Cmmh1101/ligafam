@@ -24,6 +24,9 @@ export default async function JoinTeamPage({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
+      <a href={`/${locale}`} className="text-sm text-slate-500 underline">
+        {t("common.back")}
+      </a>
       <h1 className="text-xl font-semibold text-slate-900">{t("team.joinTeam")}</h1>
       <JoinTeamForm initialTeam={initialTeam} />
     </main>

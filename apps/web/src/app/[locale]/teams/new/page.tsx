@@ -24,6 +24,9 @@ export default async function NewTeamPage({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
+      <a href={`/${locale}`} className="text-sm text-slate-500 underline">
+        {t("common.back")}
+      </a>
       <h1 className="text-xl font-semibold text-slate-900">{t("team.createTeamTitle")}</h1>
 
       {error && <p className="text-sm text-red-600">{t(error)}</p>}
