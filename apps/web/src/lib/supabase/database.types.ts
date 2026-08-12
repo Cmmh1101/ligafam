@@ -321,7 +321,7 @@ export type Database = {
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       record_count_event: {
-        Args: { p_game_id: string; p_event_type: string };
+        Args: { p_game_id: string; p_event_type: string; p_delta?: number };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       start_game: {

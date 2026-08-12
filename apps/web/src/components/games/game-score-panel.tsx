@@ -94,6 +94,22 @@ export function GameScorePanel({
     if (countError) setError(t(rpcErrorKey(countError.message)));
   }
 
+  // Corrects a misclicked ball/strike/out without the +1 path's threshold
+  // side effects (no walk, no strikeout-out, no inning advance) -- just
+  // decrements that one counter, floored at 0 server-side.
+  async function removeCount(eventType: "ball" | "strike" | "out") {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const { error: countError } = await supabase.rpc("record_count_event", {
+      p_game_id: game.id,
+      p_event_type: eventType,
+      p_delta: -1
+    });
+    setLoading(false);
+    if (countError) setError(t(rpcErrorKey(countError.message)));
+  }
+
   async function finalizeGame() {
     if (!game) return;
     setLoading(true);
@@ -176,30 +192,40 @@ export function GameScorePanel({
       {isLive && isApprovedAdmin && (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => addCount("ball")}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-            >
-              {t("game.ball")}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => addCount("strike")}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-            >
-              {t("game.strike")}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => addCount("out")}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-            >
-              {t("game.out")}
-            </button>
+            {(
+              [
+                { type: "ball" as const, label: t("game.ball"), value: game.balls },
+                { type: "strike" as const, label: t("game.strike"), value: game.strikes },
+                { type: "out" as const, label: t("game.out"), value: game.outs }
+              ]
+            ).map(({ type, label, value }) => (
+              <div
+                key={type}
+                className="flex flex-1 items-center justify-between rounded-lg border border-slate-300 px-2 py-2"
+              >
+                <button
+                  type="button"
+                  disabled={loading || value === 0}
+                  onClick={() => removeCount(type)}
+                  aria-label={`-1 ${label}`}
+                  title={`-1 ${label}`}
+                  className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
+                >
+                  −
+                </button>
+                <span className="text-sm font-medium text-slate-700">{label}</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => addCount(type)}
+                  aria-label={`+1 ${label}`}
+                  title={`+1 ${label}`}
+                  className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  +
+                </button>
+              </div>
+            ))}
           </div>
 
           <div className="flex gap-2">
