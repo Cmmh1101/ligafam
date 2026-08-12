@@ -81,10 +81,47 @@ export default async function EventDetailPage({
     event.type === "game" && isApprovedMember
       ? await supabase
           .from("games")
-          .select("id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes")
+          .select(
+            "id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes, home_or_away, current_batter_player_id, current_pitcher_player_id"
+          )
           .eq("event_id", eventId)
           .maybeSingle()
       : { data: null };
+
+  // Active roster for the batting-order/pitcher pickers and for resolving
+  // current_batter_player_id/current_pitcher_player_id into names for every
+  // viewer, not just the admin editing them. Independently scoped from the
+  // RSVP roster query below (different, broader gate: any approved member,
+  // not just admin/family), so kept separate rather than reusing that query.
+  const { data: gameSeason } =
+    event.type === "game" && isApprovedMember
+      ? await supabase.from("seasons").select("id").eq("team_id", teamId).eq("is_active", true).maybeSingle()
+      : { data: null };
+
+  const { data: gameRosterRows } = gameSeason
+    ? await supabase
+        .from("season_rosters")
+        .select("players(id, first_name, last_name, jersey_number)")
+        .eq("season_id", gameSeason.id)
+        .eq("active", true)
+    : { data: [] };
+
+  const gameRoster = (gameRosterRows ?? []).flatMap((row) => {
+    const player = row.players as unknown as
+      | { id: string; first_name: string; last_name: string; jersey_number: string | null }
+      | null;
+    return player ? [player] : [];
+  });
+
+  const { data: lineupRows } = game
+    ? await supabase
+        .from("game_lineup")
+        .select("player_id")
+        .eq("game_id", game.id)
+        .order("batting_order", { ascending: true })
+    : { data: [] };
+
+  const initialLineup = (lineupRows ?? []).map((row) => row.player_id as string);
 
   // --- RSVP section: roster-driven, LEFT JOIN'd against event_rsvps in JS
   // (not a single PostgREST query) so a player added to the roster after
@@ -218,6 +255,8 @@ export default async function EventDetailPage({
           initialGame={game}
           isApprovedAdmin={isApprovedAdmin}
           opponentName={event.opponent_name}
+          roster={gameRoster}
+          initialLineup={initialLineup}
         />
       )}
 

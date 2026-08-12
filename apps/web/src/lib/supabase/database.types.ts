@@ -213,6 +213,8 @@ export type Database = {
           outs: number;
           balls: number;
           strikes: number;
+          current_batter_player_id: string | null;
+          current_pitcher_player_id: string | null;
           started_at: string | null;
           ended_at: string | null;
         },
@@ -228,6 +230,8 @@ export type Database = {
           outs?: number;
           balls?: number;
           strikes?: number;
+          current_batter_player_id?: string | null;
+          current_pitcher_player_id?: string | null;
           started_at?: string | null;
           ended_at?: string | null;
         }
@@ -261,14 +265,14 @@ export type Database = {
           id: string;
           game_id: string;
           player_id: string;
-          batting_order: number | null;
+          batting_order: number;
           position: string | null;
         },
         {
           id?: string;
           game_id: string;
           player_id: string;
-          batting_order?: number | null;
+          batting_order: number;
           position?: string | null;
         }
       >;
@@ -330,6 +334,22 @@ export type Database = {
       };
       finalize_game: {
         Args: { p_game_id: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      advance_batter: {
+        Args: { p_game_id: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      set_lineup: {
+        Args: { p_game_id: string; p_player_ids: string[] };
+        Returns: Database["public"]["Tables"]["game_lineup"]["Row"][];
+      };
+      set_current_pitcher: {
+        Args: { p_game_id: string; p_player_id: string | null };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      set_home_or_away: {
+        Args: { p_game_id: string; p_home_or_away: string };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };

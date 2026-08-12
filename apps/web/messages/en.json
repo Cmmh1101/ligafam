@@ -172,7 +172,16 @@
     "addRunOpponent": "+1 run (opponent)",
     "ball": "Ball",
     "strike": "Strike",
-    "out": "Out"
+    "out": "Out",
+    "batting": "Batting",
+    "pitching": "Pitching",
+    "home": "Home",
+    "away": "Away",
+    "nextBatter": "Next batter",
+    "lineupTitle": "Batting order",
+    "saveLineup": "Save batting order",
+    "pitcherLabel": "Pitcher",
+    "noPitcherSelected": "No pitcher selected"
   },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",

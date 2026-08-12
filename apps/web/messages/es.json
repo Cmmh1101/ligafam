@@ -172,7 +172,16 @@
     "addRunOpponent": "+1 carrera (rival)",
     "ball": "Bola",
     "strike": "Strike",
-    "out": "Out"
+    "out": "Out",
+    "batting": "Bateando",
+    "pitching": "Lanzando",
+    "home": "Local",
+    "away": "Visitante",
+    "nextBatter": "Siguiente bateador",
+    "lineupTitle": "Orden al bate",
+    "saveLineup": "Guardar orden al bate",
+    "pitcherLabel": "Lanzador",
+    "noPitcherSelected": "Sin lanzador"
   },
   "errors": {
     "notAuthenticated": "Debes iniciar sesión para continuar",
