@@ -215,6 +215,9 @@ export type Database = {
           strikes: number;
           current_batter_player_id: string | null;
           current_pitcher_player_id: string | null;
+          opponent_pitcher_name: string | null;
+          opponent_pitcher_number: string | null;
+          current_opponent_batter_id: string | null;
           started_at: string | null;
           ended_at: string | null;
         },
@@ -232,6 +235,9 @@ export type Database = {
           strikes?: number;
           current_batter_player_id?: string | null;
           current_pitcher_player_id?: string | null;
+          opponent_pitcher_name?: string | null;
+          opponent_pitcher_number?: string | null;
+          current_opponent_batter_id?: string | null;
           started_at?: string | null;
           ended_at?: string | null;
         }
@@ -274,6 +280,22 @@ export type Database = {
           player_id: string;
           batting_order: number;
           position?: string | null;
+        }
+      >;
+      game_opponent_lineup: TableDef<
+        {
+          id: string;
+          game_id: string;
+          batting_order: number;
+          display_name: string | null;
+          jersey_number: string | null;
+        },
+        {
+          id?: string;
+          game_id: string;
+          batting_order: number;
+          display_name?: string | null;
+          jersey_number?: string | null;
         }
       >;
       team_messages: TableDef<
@@ -350,6 +372,21 @@ export type Database = {
       };
       set_home_or_away: {
         Args: { p_game_id: string; p_home_or_away: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      advance_opponent_batter: {
+        Args: { p_game_id: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      set_opponent_lineup: {
+        Args: {
+          p_game_id: string;
+          p_entries: { display_name: string | null; jersey_number: string | null }[];
+        };
+        Returns: Database["public"]["Tables"]["game_opponent_lineup"]["Row"][];
+      };
+      set_opponent_pitcher: {
+        Args: { p_game_id: string; p_name: string | null; p_number: string | null };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };

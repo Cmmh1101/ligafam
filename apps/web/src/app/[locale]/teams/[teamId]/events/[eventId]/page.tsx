@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatEventDateTime } from "@/lib/datetime";
 import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
 import { GameScorePanel } from "@/components/games/game-score-panel";
+import { LineupSetup } from "@/components/games/lineup-setup";
+import { EventTabs } from "@/components/events/event-tabs";
 import { claimSnackAction, deleteSnackAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
@@ -82,7 +84,7 @@ export default async function EventDetailPage({
       ? await supabase
           .from("games")
           .select(
-            "id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes, home_or_away, current_batter_player_id, current_pitcher_player_id"
+            "id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes, home_or_away, current_batter_player_id, current_pitcher_player_id, opponent_pitcher_name, opponent_pitcher_number, current_opponent_batter_id"
           )
           .eq("event_id", eventId)
           .maybeSingle()
@@ -122,6 +124,16 @@ export default async function EventDetailPage({
     : { data: [] };
 
   const initialLineup = (lineupRows ?? []).map((row) => row.player_id as string);
+
+  const { data: opponentLineupRows } = game
+    ? await supabase
+        .from("game_opponent_lineup")
+        .select("id, batting_order, display_name, jersey_number")
+        .eq("game_id", game.id)
+        .order("batting_order", { ascending: true })
+    : { data: [] };
+
+  const initialOpponentLineup = opponentLineupRows ?? [];
 
   // --- RSVP section: roster-driven, LEFT JOIN'd against event_rsvps in JS
   // (not a single PostgREST query) so a player added to the roster after
@@ -206,6 +218,88 @@ export default async function EventDetailPage({
   const claimSnack = claimSnackAction.bind(null, locale, teamId, eventId);
   const deleteSnack = deleteSnackAction.bind(null, locale, teamId, eventId);
 
+  const rsvpSection = event.type !== "other" && (isApprovedAdmin || isApprovedFamily) && (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-sm font-medium text-slate-500">{t("events.rsvpSection")}</h2>
+
+      {rosterRows.length === 0 ? (
+        <p className="text-slate-600">{t("events.noRosterYet")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {rosterRows.map((row) => (
+            <li
+              key={row.player_id}
+              className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
+            >
+              <span className="text-slate-900">
+                {row.first_name} {row.last_name}
+              </span>
+              {myLinkedPlayerIds.has(row.player_id) ? (
+                <RsvpToggle eventId={eventId} playerId={row.player_id} currentStatus={row.status} userId={user.id} />
+              ) : (
+                <RsvpStatusBadge status={row.status} />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  const snacksSection = isApprovedMember && (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-sm font-medium text-slate-500">{t("snacks.title")}</h2>
+
+      {snacks.length === 0 ? (
+        <p className="text-slate-600">{t("snacks.noSnacksYet")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {snacks.map((snack) => {
+            const deleteThisSnack = deleteSnack.bind(null, snack.id);
+            return (
+              <li
+                key={snack.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-4 py-3"
+              >
+                <div className="flex flex-col">
+                  <span className="text-slate-900">{snack.item}</span>
+                  <span className="text-xs text-slate-500">
+                    {t("snacks.forPlayer")}: {snack.playerName || t("snacks.byAdmin")}
+                  </span>
+                </div>
+                {snack.canDelete && (
+                  <form action={deleteThisSnack}>
+                    <button
+                      type="submit"
+                      className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+                    >
+                      {t("common.delete")}
+                    </button>
+                  </form>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {(isApprovedAdmin || isApprovedFamily) && (
+        <form action={claimSnack} className="flex gap-2">
+          <input
+            name="item"
+            type="text"
+            required
+            placeholder={t("snacks.itemPlaceholder")}
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
+          />
+          <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+            {t("snacks.claim")}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+
   return (
     <>
       <header className="flex flex-col gap-1">
@@ -216,102 +310,39 @@ export default async function EventDetailPage({
         {event.location && <p className="text-sm text-slate-500">{event.location}</p>}
       </header>
 
-      {event.type !== "other" && (isApprovedAdmin || isApprovedFamily) && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-slate-500">{t("events.rsvpSection")}</h2>
-
-          {rosterRows.length === 0 ? (
-            <p className="text-slate-600">{t("events.noRosterYet")}</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {rosterRows.map((row) => (
-                <li
-                  key={row.player_id}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
-                >
-                  <span className="text-slate-900">
-                    {row.first_name} {row.last_name}
-                  </span>
-                  {myLinkedPlayerIds.has(row.player_id) ? (
-                    <RsvpToggle
-                      eventId={eventId}
-                      playerId={row.player_id}
-                      currentStatus={row.status}
-                      userId={user.id}
-                    />
-                  ) : (
-                    <RsvpStatusBadge status={row.status} />
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {event.type === "game" && isApprovedMember && (
-        <GameScorePanel
-          eventId={eventId}
-          initialGame={game}
-          isApprovedAdmin={isApprovedAdmin}
-          opponentName={event.opponent_name}
-          roster={gameRoster}
-          initialLineup={initialLineup}
+      {event.type === "game" && isApprovedMember ? (
+        <EventTabs
+          boardContent={
+            <GameScorePanel
+              eventId={eventId}
+              initialGame={game}
+              isApprovedAdmin={isApprovedAdmin}
+              opponentName={event.opponent_name}
+              roster={gameRoster}
+              initialOpponentLineup={initialOpponentLineup}
+            />
+          }
+          rosterContent={
+            <>
+              {rsvpSection}
+              {isApprovedAdmin && (
+                <LineupSetup
+                  eventId={eventId}
+                  initialGame={game}
+                  roster={gameRoster}
+                  initialLineup={initialLineup}
+                  initialOpponentLineup={initialOpponentLineup}
+                />
+              )}
+            </>
+          }
+          snacksContent={snacksSection}
         />
-      )}
-
-      {isApprovedMember && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-slate-500">{t("snacks.title")}</h2>
-
-          {snacks.length === 0 ? (
-            <p className="text-slate-600">{t("snacks.noSnacksYet")}</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {snacks.map((snack) => {
-                const deleteThisSnack = deleteSnack.bind(null, snack.id);
-                return (
-                  <li
-                    key={snack.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-4 py-3"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-slate-900">{snack.item}</span>
-                      <span className="text-xs text-slate-500">
-                        {t("snacks.forPlayer")}: {snack.playerName || t("snacks.byAdmin")}
-                      </span>
-                    </div>
-                    {snack.canDelete && (
-                      <form action={deleteThisSnack}>
-                        <button
-                          type="submit"
-                          className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
-                        >
-                          {t("common.delete")}
-                        </button>
-                      </form>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {(isApprovedAdmin || isApprovedFamily) && (
-            <form action={claimSnack} className="flex gap-2">
-              <input
-                name="item"
-                type="text"
-                required
-                placeholder={t("snacks.itemPlaceholder")}
-                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
-              />
-              <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
-                {t("snacks.claim")}
-              </button>
-            </form>
-          )}
-        </div>
+      ) : (
+        <>
+          {rsvpSection}
+          {snacksSection}
+        </>
       )}
     </>
   );

@@ -20,6 +20,9 @@ type Game = {
   home_or_away: string | null;
   current_batter_player_id: string | null;
   current_pitcher_player_id: string | null;
+  opponent_pitcher_name: string | null;
+  opponent_pitcher_number: string | null;
+  current_opponent_batter_id: string | null;
 };
 
 type RosterPlayer = {
@@ -29,34 +32,35 @@ type RosterPlayer = {
   jersey_number: string | null;
 };
 
+type OpponentBatter = {
+  id: string;
+  batting_order: number;
+  display_name: string | null;
+  jersey_number: string | null;
+};
+
 export function GameScorePanel({
   eventId,
   initialGame,
   isApprovedAdmin,
   opponentName,
   roster,
-  initialLineup
+  initialOpponentLineup
 }: {
   eventId: string;
   initialGame: Game | null;
   isApprovedAdmin: boolean;
   opponentName: string | null;
   roster: RosterPlayer[];
-  initialLineup: string[];
+  initialOpponentLineup: OpponentBatter[];
 }) {
   const t = useTranslations();
   const supabase = createClient();
 
   const [game, setGame] = useState<Game | null>(initialGame);
+  const [opponentLineup, setOpponentLineup] = useState<OpponentBatter[]>(initialOpponentLineup);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Tap-to-build working set for the lineup editor, separate from
-  // hasSavedLineup so the "next batter" button's visibility reflects what's
-  // actually persisted, not whatever the admin has mid-edit -- avoids a
-  // reachable LINEUP_EMPTY from tapping "next batter" before saving.
-  const [lineupSelection, setLineupSelection] = useState<string[]>(initialLineup);
-  const [hasSavedLineup, setHasSavedLineup] = useState(initialLineup.length > 0);
 
   // Filtered on event_id (not id) because a viewer who loaded this page
   // before the admin started the game has no game id yet to subscribe by --
@@ -78,11 +82,41 @@ export function GameScorePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
+  // game_opponent_lineup isn't itself realtime-published (its full list only
+  // matters to the admin editing it on the Roster tab), but this component
+  // still needs an up-to-date copy to resolve the opponent's current
+  // batter's name -- set_opponent_lineup always assigns a fresh
+  // current_opponent_batter_id on every save, so a change there (which IS
+  // realtime, as part of `games`) is a reliable signal to re-fetch the
+  // small opponent list via a plain query, without a second channel.
+  useEffect(() => {
+    if (!game?.id) return;
+    supabase
+      .from("game_opponent_lineup")
+      .select("id, batting_order, display_name, jersey_number")
+      .eq("game_id", game.id)
+      .order("batting_order", { ascending: true })
+      .then(({ data }) => {
+        if (data) setOpponentLineup(data);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id, game?.current_opponent_batter_id]);
+
   function playerName(id: string | null): string | null {
     if (!id) return null;
     const player = roster.find((p) => p.id === id);
     if (!player) return null;
     return `${player.first_name} ${player.last_name}${player.jersey_number ? ` #${player.jersey_number}` : ""}`;
+  }
+
+  function opponentBatterName(id: string | null): string | null {
+    if (!id) return null;
+    const batter = opponentLineup.find((o) => o.id === id);
+    if (!batter) return null;
+    if (batter.display_name || batter.jersey_number) {
+      return `${batter.display_name ?? ""}${batter.jersey_number ? ` #${batter.jersey_number}` : ""}`.trim();
+    }
+    return `${t("game.opponentBatting")} #${batter.batting_order}`;
   }
 
   async function startGame() {
@@ -168,38 +202,13 @@ export function GameScorePanel({
     if (advanceError) setError(t(rpcErrorKey(advanceError.message)));
   }
 
-  async function selectPitcher(playerId: string) {
+  async function nextOpponentBatter() {
     if (!game) return;
     setLoading(true);
     setError(null);
-    const { error: pitcherError } = await supabase.rpc("set_current_pitcher", {
-      p_game_id: game.id,
-      p_player_id: playerId || null
-    });
+    const { error: advanceError } = await supabase.rpc("advance_opponent_batter", { p_game_id: game.id });
     setLoading(false);
-    if (pitcherError) setError(t(rpcErrorKey(pitcherError.message)));
-  }
-
-  function toggleLineupPlayer(playerId: string) {
-    setLineupSelection((prev) =>
-      prev.includes(playerId) ? prev.filter((id) => id !== playerId) : [...prev, playerId]
-    );
-  }
-
-  async function saveLineup() {
-    if (!game || lineupSelection.length === 0) return;
-    setLoading(true);
-    setError(null);
-    const { error: lineupError } = await supabase.rpc("set_lineup", {
-      p_game_id: game.id,
-      p_player_ids: lineupSelection
-    });
-    setLoading(false);
-    if (lineupError) {
-      setError(t(rpcErrorKey(lineupError.message)));
-      return;
-    }
-    setHasSavedLineup(true);
+    if (advanceError) setError(t(rpcErrorKey(advanceError.message)));
   }
 
   if (!game) {
@@ -224,8 +233,31 @@ export function GameScorePanel({
 
   const opponentLabel = opponentName || t("game.opponent");
   const isLive = game.status === "live";
-  const battingName = playerName(game.current_batter_player_id);
-  const pitchingName = playerName(game.current_pitcher_player_id);
+
+  // Whose half is it -- home bats bottom, away bats top. Unknown (null)
+  // until home/away is set, in which case neither line is shown rather
+  // than guessing.
+  const isOurHalf =
+    game.home_or_away !== null &&
+    ((game.inning_half === "bottom" && game.home_or_away === "home") ||
+      (game.inning_half === "top" && game.home_or_away === "away"));
+
+  let battingDisplay: string | null = null;
+  let pitchingDisplay: string | null = null;
+  if (game.home_or_away !== null) {
+    if (isOurHalf) {
+      battingDisplay = playerName(game.current_batter_player_id);
+      pitchingDisplay =
+        game.opponent_pitcher_name || game.opponent_pitcher_number
+          ? `${game.opponent_pitcher_name ?? ""}${
+              game.opponent_pitcher_number ? ` #${game.opponent_pitcher_number}` : ""
+            }`.trim()
+          : t("game.opponentPitcherUnset");
+    } else {
+      battingDisplay = opponentBatterName(game.current_opponent_batter_id);
+      pitchingDisplay = playerName(game.current_pitcher_player_id);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -273,16 +305,16 @@ export function GameScorePanel({
           </div>
         )}
 
-        {(battingName || pitchingName) && (
+        {(battingDisplay || pitchingDisplay) && (
           <div className="flex flex-col gap-0.5 text-xs text-slate-500">
-            {battingName && (
+            {battingDisplay && (
               <span>
-                {t("game.batting")}: {battingName}
+                {t("game.batting")}: {battingDisplay}
               </span>
             )}
-            {pitchingName && (
+            {pitchingDisplay && (
               <span>
-                {t("game.pitching")}: {pitchingName}
+                {t("game.pitching")}: {pitchingDisplay}
               </span>
             )}
           </div>
@@ -374,69 +406,27 @@ export function GameScorePanel({
             </button>
           </div>
 
-          {hasSavedLineup && (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={nextBatter}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-            >
-              {t("game.nextBatter")}
-            </button>
-          )}
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-500">{t("game.pitcherLabel")}</label>
-            <select
-              value={game.current_pitcher_player_id ?? ""}
-              disabled={loading}
-              onChange={(e) => selectPitcher(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">{t("game.noPitcherSelected")}</option>
-              {roster.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.first_name} {player.last_name}
-                  {player.jersey_number ? ` #${player.jersey_number}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
-            <p className="text-xs font-medium text-slate-500">{t("game.lineupTitle")}</p>
-            <ul className="flex flex-col gap-1">
-              {roster.map((player) => {
-                const position = lineupSelection.indexOf(player.id);
-                const inLineup = position !== -1;
-                return (
-                  <li key={player.id}>
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => toggleLineupPlayer(player.id)}
-                      className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm disabled:opacity-50 ${
-                        inLineup ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-700"
-                      }`}
-                    >
-                      <span>
-                        {player.first_name} {player.last_name}
-                        {player.jersey_number ? ` #${player.jersey_number}` : ""}
-                      </span>
-                      {inLineup && <span>{position + 1}</span>}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <button
-              type="button"
-              disabled={loading || lineupSelection.length === 0}
-              onClick={saveLineup}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
-              {t("game.saveLineup")}
-            </button>
+          <div className="flex gap-2">
+            {game.current_batter_player_id !== null && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={nextBatter}
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+              >
+                {t("game.nextBatter")}
+              </button>
+            )}
+            {game.current_opponent_batter_id !== null && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={nextOpponentBatter}
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+              >
+                {t("game.nextOpponentBatter")}
+              </button>
+            )}
           </div>
 
           <button

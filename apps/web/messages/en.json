@@ -181,7 +181,19 @@
     "lineupTitle": "Batting order",
     "saveLineup": "Save batting order",
     "pitcherLabel": "Pitcher",
-    "noPitcherSelected": "No pitcher selected"
+    "noPitcherSelected": "No pitcher selected",
+    "boardTab": "Scoreboard",
+    "rosterTab": "Roster",
+    "snacksTab": "Snacks",
+    "opponentBatting": "Opponent",
+    "opponentPitcherUnset": "Opponent pitcher",
+    "addOpponentBatter": "+ Add batter",
+    "opponentLineupTitle": "Opponent batting order",
+    "saveOpponentLineup": "Save opponent batting order",
+    "opponentPitcherLabel": "Opponent pitcher",
+    "opponentPitcherName": "Name",
+    "opponentPitcherNumber": "#",
+    "nextOpponentBatter": "Next opponent batter"
   },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",

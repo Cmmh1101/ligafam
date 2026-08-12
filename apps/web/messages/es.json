@@ -181,7 +181,19 @@
     "lineupTitle": "Orden al bate",
     "saveLineup": "Guardar orden al bate",
     "pitcherLabel": "Lanzador",
-    "noPitcherSelected": "Sin lanzador"
+    "noPitcherSelected": "Sin lanzador",
+    "boardTab": "Marcador",
+    "rosterTab": "Roster",
+    "snacksTab": "Refrigerios",
+    "opponentBatting": "Visitante",
+    "opponentPitcherUnset": "Lanzador visitante",
+    "addOpponentBatter": "+ Agregar bateador",
+    "opponentLineupTitle": "Orden al bate rival",
+    "saveOpponentLineup": "Guardar orden al bate rival",
+    "opponentPitcherLabel": "Lanzador rival",
+    "opponentPitcherName": "Nombre",
+    "opponentPitcherNumber": "#",
+    "nextOpponentBatter": "Siguiente bateador rival"
   },
   "errors": {
     "notAuthenticated": "Debes iniciar sesión para continuar",
