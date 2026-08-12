@@ -1,6 +1,6 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { LocaleToggle } from "@/components/locale-toggle";
-import { SignOutButton } from "@/components/auth/sign-out-button";
+import { ProfileMenu } from "@/components/auth/profile-menu";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -20,7 +20,16 @@ export default async function HomePage() {
     status: string;
   }[] = [];
 
+  let profileFullName = "";
+
   if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    profileFullName = profile?.full_name ?? "";
+
     const { data: memberships } = await supabase
       .from("team_members")
       .select("id, team_id, role, status")
@@ -56,7 +65,10 @@ export default async function HomePage() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-900">{t("common.appName")}</h1>
-        <LocaleToggle />
+        <div className="flex items-center gap-2">
+          <LocaleToggle />
+          {user && <ProfileMenu locale={locale} fullName={profileFullName} email={user.email ?? ""} />}
+        </div>
       </header>
 
       {user ? (
@@ -113,8 +125,6 @@ export default async function HomePage() {
               {t("team.searchTeams")}
             </a>
           </div>
-
-          <SignOutButton />
         </div>
       ) : (
         <a

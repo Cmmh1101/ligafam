@@ -96,6 +96,11 @@
     "removeAdmin": "Quitar administrador",
     "you": "tú"
   },
+  "profile": {
+    "title": "Mi perfil",
+    "phone": "Número de teléfono",
+    "phoneHint": "Opcional"
+  },
   "adminInvite": {
     "title": "Invitación de administrador",
     "description": "Fuiste invitado a ser administrador de {teamName}",
@@ -217,6 +222,8 @@
     "inviteEmailMismatch": "Esta invitación es para otro correo",
     "gameAlreadyFinal": "Este partido ya finalizó",
     "adminNotFound": "Administrador no encontrado",
-    "cannotRemoveSelf": "No puedes quitarte a ti mismo como administrador"
+    "cannotRemoveSelf": "No puedes quitarte a ti mismo como administrador",
+    "fullNameRequired": "El nombre completo es obligatorio",
+    "phoneAlreadyInUse": "Este número de teléfono ya está registrado en otra cuenta"
   }
 }

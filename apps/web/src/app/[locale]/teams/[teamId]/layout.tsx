@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TeamNav } from "@/components/teams/team-nav";
+import { ProfileMenu } from "@/components/auth/profile-menu";
 
 export default async function TeamLayout({
   children,
@@ -22,6 +23,13 @@ export default async function TeamLayout({
   }
 
   const t = await getTranslations();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profileFullName = profile?.full_name ?? "";
 
   const { data: team } = await supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle();
 
@@ -52,7 +60,10 @@ export default async function TeamLayout({
         <a href={`/${locale}`} className="text-sm text-slate-500 underline">
           {t("common.myTeams")}
         </a>
-        <span className="text-sm font-medium text-slate-900">{team.name}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-slate-900">{team.name}</span>
+          <ProfileMenu locale={locale} fullName={profileFullName} email={user.email ?? ""} />
+        </div>
       </header>
 
       {isApprovedMember && <TeamNav teamId={teamId} locale={locale} isApprovedAdmin={isApprovedAdmin} />}

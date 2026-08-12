@@ -96,6 +96,11 @@
     "removeAdmin": "Remove admin",
     "you": "you"
   },
+  "profile": {
+    "title": "My profile",
+    "phone": "Phone number",
+    "phoneHint": "Optional"
+  },
   "adminInvite": {
     "title": "Admin invite",
     "description": "You've been invited to be an admin of {teamName}",
@@ -217,6 +222,8 @@
     "inviteEmailMismatch": "This invite is for a different email",
     "gameAlreadyFinal": "This game has already finished",
     "adminNotFound": "Admin not found",
-    "cannotRemoveSelf": "You can't remove yourself as admin"
+    "cannotRemoveSelf": "You can't remove yourself as admin",
+    "fullNameRequired": "Full name is required",
+    "phoneAlreadyInUse": "This phone number is already registered to another account"
   }
 }
