@@ -341,13 +341,13 @@ export function GameScorePanel({
         )}
 
         {isLive && (
-          <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
-            <span className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-6 text-lg font-medium text-slate-700">
+            <span className="flex items-center gap-1.5">
               {t("game.outs")}:
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className={`h-2 w-2 rounded-full ${i < game.outs ? "bg-slate-900" : "bg-slate-200"}`}
+                  className={`h-3 w-3 rounded-full ${i < game.outs ? "bg-slate-900" : "bg-slate-200"}`}
                 />
               ))}
             </span>
@@ -358,7 +358,7 @@ export function GameScorePanel({
         )}
 
         {(battingDisplay || pitchingDisplay) && (
-          <div className="flex flex-col gap-0.5 text-xs text-slate-500">
+          <div className="flex flex-col gap-1 text-base text-slate-700">
             {battingDisplay && (
               <span>
                 {t("game.batting")}: {battingDisplay}
