@@ -1,7 +1,76 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { toUtcIso } from "@/lib/datetime";
+import type { EventType } from "@/lib/supabase/database.types";
+
+const EVENT_TYPES: EventType[] = ["game", "practice", "other"];
+
+export async function updateEventAction(locale: string, teamId: string, eventId: string, formData: FormData) {
+  const rawType = String(formData.get("type") ?? "game");
+  const type: EventType = EVENT_TYPES.includes(rawType as EventType) ? (rawType as EventType) : "game";
+  const title = String(formData.get("title") ?? "").trim();
+  const opponentName = String(formData.get("opponentName") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  const startsAt = String(formData.get("startsAt") ?? "");
+  const endsAt = String(formData.get("endsAt") ?? "");
+
+  if (!startsAt) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Relies on the existing "events: admins update" RLS policy — no RPC
+  // needed, a non-admin's update is simply rejected by Postgres.
+  await supabase
+    .from("events")
+    .update({
+      type,
+      title: title || null,
+      opponent_name: opponentName || null,
+      location: location || null,
+      starts_at: toUtcIso(startsAt),
+      ends_at: endsAt ? toUtcIso(endsAt) : null
+    })
+    .eq("id", eventId)
+    .eq("team_id", teamId);
+
+  redirect(`/${locale}/teams/${teamId}/events/${eventId}`);
+}
+
+// Cascades: event_rsvps, snack_assignments, and the games row (which
+// itself cascades to game_lineup/game_opponent_lineup) all disappear
+// with the event -- there's no undo.
+export async function deleteEventAction(locale: string, teamId: string, eventId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: membership } = await supabase
+    .from("team_members")
+    .select("id")
+    .eq("team_id", teamId)
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .eq("status", "approved")
+    .maybeSingle();
+  if (!membership) return;
+
+  // Relies on the existing "events: admins delete" RLS policy — no RPC
+  // needed, a non-admin's delete is simply rejected by Postgres.
+  await supabase.from("events").delete().eq("id", eventId).eq("team_id", teamId);
+
+  redirect(`/${locale}/teams/${teamId}/events`);
+}
 
 export async function claimSnackAction(
   locale: string,

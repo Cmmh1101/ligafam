@@ -6,7 +6,7 @@ import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
 import { GameScorePanel } from "@/components/games/game-score-panel";
 import { LineupSetup } from "@/components/games/lineup-setup";
 import { EventTabs } from "@/components/events/event-tabs";
-import { claimSnackAction, deleteSnackAction } from "./actions";
+import { claimSnackAction, deleteSnackAction, deleteEventAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
 
@@ -217,6 +217,7 @@ export default async function EventDetailPage({
 
   const claimSnack = claimSnackAction.bind(null, locale, teamId, eventId);
   const deleteSnack = deleteSnackAction.bind(null, locale, teamId, eventId);
+  const deleteEvent = deleteEventAction.bind(null, locale, teamId, eventId);
 
   const rsvpSection = event.type !== "other" && (isApprovedAdmin || isApprovedFamily) && (
     <div className="flex flex-col gap-3">
@@ -308,6 +309,24 @@ export default async function EventDetailPage({
         </h1>
         <p className="text-sm text-slate-500">{formatEventDateTime(event.starts_at, locale)}</p>
         {event.location && <p className="text-sm text-slate-500">{event.location}</p>}
+        {isApprovedAdmin && (
+          <div className="flex gap-3 pt-1">
+            <a
+              href={`/${locale}/teams/${teamId}/events/${eventId}/edit`}
+              className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+            >
+              {t("common.edit")}
+            </a>
+            <form action={deleteEvent}>
+              <button
+                type="submit"
+                className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+              >
+                {t("common.delete")}
+              </button>
+            </form>
+          </div>
+        )}
       </header>
 
       {event.type === "game" && isApprovedMember ? (

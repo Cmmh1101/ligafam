@@ -7,6 +7,7 @@
     "approve": "Aprobar",
     "reject": "Rechazar",
     "delete": "Eliminar",
+    "edit": "Editar",
     "continue": "Continuar",
     "back": "Atrás",
     "myTeams": "Mis equipos",
@@ -128,6 +129,8 @@
     "previousMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
     "today": "Hoy",
+    "viewAllEvents": "Ver todos los eventos",
+    "noEventsThisDay": "No hay eventos este día",
     "type": {
       "game": "Partido",
       "practice": "Práctica",

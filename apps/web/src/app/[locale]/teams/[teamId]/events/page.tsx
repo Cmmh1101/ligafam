@@ -13,10 +13,10 @@ export default async function EventsPage({
   searchParams
 }: {
   params: Promise<{ teamId: string }>;
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; day?: string; view?: string }>;
 }) {
   const { teamId } = await params;
-  const { month: monthQuery } = await searchParams;
+  const { month: monthQuery, day: dayQuery, view: viewQuery } = await searchParams;
   const locale = await getLocale();
   const supabase = await createClient();
   const {
@@ -72,12 +72,10 @@ export default async function EventsPage({
 
   const hasEventDay = new Set<string>();
   const liveOrTodayDay = new Set<string>();
-  const firstEventIdByDay = new Map<string, string>();
 
   for (const event of events ?? []) {
     const key = dateKey(new Date(event.starts_at));
     hasEventDay.add(key);
-    if (!firstEventIdByDay.has(key)) firstEventIdByDay.set(key, event.id);
     if (gameByEvent.get(event.id)?.status === "live" || key === todayKey) {
       liveOrTodayDay.add(key);
     }
@@ -95,6 +93,108 @@ export default async function EventsPage({
   const nextMonthDate = new Date(year, month + 1, 1);
   const prevMonthParam = monthParam(prevMonthDate.getFullYear(), prevMonthDate.getMonth());
   const nextMonthParam = monthParam(nextMonthDate.getFullYear(), nextMonthDate.getMonth());
+
+  const isDayView = !!dayQuery && /^\d{4}-\d{2}-\d{2}$/.test(dayQuery);
+  const isAllView = !isDayView && viewQuery === "all";
+
+  function renderEventCard(event: NonNullable<typeof events>[number]) {
+    const game = gameByEvent.get(event.id);
+    const isLive = game?.status === "live";
+    const isFinal = game?.status === "final";
+    const resultColor =
+      game && game.ourScore > game.opponentScore
+        ? "text-green-600"
+        : game && game.ourScore < game.opponentScore
+          ? "text-red-600"
+          : "text-slate-500";
+    return (
+      <li key={event.id}>
+        <a
+          id={`event-${event.id}`}
+          href={`/${locale}/teams/${teamId}/events/${event.id}`}
+          className="flex flex-col gap-1 rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50"
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-slate-900">
+              {event.title || event.opponent_name || t(`events.type.${event.type}`)}
+            </span>
+            {isLive ? (
+              <span className="flex items-center gap-1 text-xs font-semibold uppercase text-red-600">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />
+                {t("game.live")}
+              </span>
+            ) : isFinal && game ? (
+              <span className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
+                {t("game.final")} | (<span className={resultColor}>{game.ourScore}</span>-
+                {game.opponentScore})
+              </span>
+            ) : (
+              <span className="text-xs text-slate-500">{t(`events.type.${event.type}`)}</span>
+            )}
+          </div>
+          <span className="text-sm text-slate-500">{formatEventDateTime(event.starts_at, locale)}</span>
+          {event.location && <span className="text-xs text-slate-500">{event.location}</span>}
+        </a>
+      </li>
+    );
+  }
+
+  const createEventButton = isApprovedAdmin && (
+    <a
+      href={`/${locale}/teams/${teamId}/events/new`}
+      className="rounded-lg bg-slate-900 px-4 py-3 text-center font-medium text-white"
+    >
+      {t("events.createEvent")}
+    </a>
+  );
+
+  if (isDayView && dayQuery) {
+    const [dYearStr, dMonthStr, dDayStr] = dayQuery.split("-");
+    const dayDate = new Date(Number(dYearStr), Number(dMonthStr) - 1, Number(dDayStr));
+    const dayLabel = new Intl.DateTimeFormat(locale, {
+      weekday: "long",
+      day: "numeric",
+      month: "long"
+    }).format(dayDate);
+    const dayEvents = (events ?? []).filter((e) => dateKey(new Date(e.starts_at)) === dayQuery);
+    const backMonth = dayQuery.slice(0, 7);
+
+    return (
+      <>
+        <a href={`?month=${backMonth}`} className="text-sm text-slate-500 underline">
+          {t("common.back")}
+        </a>
+        <h1 className="text-xl font-semibold capitalize text-slate-900">{dayLabel}</h1>
+
+        {dayEvents.length === 0 ? (
+          <p className="text-slate-600">{t("events.noEventsThisDay")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">{dayEvents.map(renderEventCard)}</ul>
+        )}
+
+        {createEventButton}
+      </>
+    );
+  }
+
+  if (isAllView) {
+    return (
+      <>
+        <a href={`?month=${now}`} className="text-sm text-slate-500 underline">
+          {t("common.back")}
+        </a>
+        <h1 className="text-xl font-semibold text-slate-900">{t("events.title")}</h1>
+
+        {!events || events.length === 0 ? (
+          <p className="text-slate-600">{t("events.noUpcomingEvents")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">{events.map(renderEventCard)}</ul>
+        )}
+
+        {createEventButton}
+      </>
+    );
+  }
 
   return (
     <>
@@ -133,86 +233,33 @@ export default async function EventsPage({
             const isToday = key === todayKey;
             const hasEvent = hasEventDay.has(key);
             const hasLiveOrToday = liveOrTodayDay.has(key);
-            const content = (
-              <div
-                className={`flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-sm ${
+            return (
+              <a
+                key={key}
+                href={`?day=${key}&month=${now}`}
+                className={`flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-sm hover:bg-slate-50 ${
                   inMonth ? "text-slate-900" : "text-slate-300"
-                } ${isToday ? "ring-1 ring-slate-900" : ""} ${hasEvent ? "hover:bg-slate-50" : ""}`}
+                } ${isToday ? "ring-1 ring-slate-900" : ""}`}
               >
                 <span aria-label={isToday ? t("events.today") : undefined}>{date.getDate()}</span>
                 <span className="flex h-1.5 items-center gap-0.5">
                   {hasEvent && <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
                   {hasLiveOrToday && <span className="h-1.5 w-1.5 rounded-full bg-red-600" />}
                 </span>
-              </div>
-            );
-            return hasEvent ? (
-              <a key={key} href={`#event-${firstEventIdByDay.get(key)}`}>
-                {content}
               </a>
-            ) : (
-              <div key={key}>{content}</div>
             );
           })}
         </div>
+
+        <a
+          href={`?view=all&month=${now}`}
+          className="rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          {t("events.viewAllEvents")}
+        </a>
       </div>
 
-      {!events || events.length === 0 ? (
-        <p className="text-slate-600">{t("events.noUpcomingEvents")}</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {events.map((event) => {
-            const game = gameByEvent.get(event.id);
-            const isLive = game?.status === "live";
-            const isFinal = game?.status === "final";
-            const resultColor =
-              game && game.ourScore > game.opponentScore
-                ? "text-green-600"
-                : game && game.ourScore < game.opponentScore
-                  ? "text-red-600"
-                  : "text-slate-500";
-            return (
-              <li key={event.id}>
-                <a
-                  id={`event-${event.id}`}
-                  href={`/${locale}/teams/${teamId}/events/${event.id}`}
-                  className="flex flex-col gap-1 rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-900">
-                      {event.title || event.opponent_name || t(`events.type.${event.type}`)}
-                    </span>
-                    {isLive ? (
-                      <span className="flex items-center gap-1 text-xs font-semibold uppercase text-red-600">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />
-                        {t("game.live")}
-                      </span>
-                    ) : isFinal && game ? (
-                      <span className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
-                        {t("game.final")} | (<span className={resultColor}>{game.ourScore}</span>-
-                        {game.opponentScore})
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-500">{t(`events.type.${event.type}`)}</span>
-                    )}
-                  </div>
-                  <span className="text-sm text-slate-500">{formatEventDateTime(event.starts_at, locale)}</span>
-                  {event.location && <span className="text-xs text-slate-500">{event.location}</span>}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {isApprovedAdmin && (
-        <a
-          href={`/${locale}/teams/${teamId}/events/new`}
-          className="rounded-lg bg-slate-900 px-4 py-3 text-center font-medium text-white"
-        >
-          {t("events.createEvent")}
-        </a>
-      )}
+      {createEventButton}
     </>
   );
 }
