@@ -7,6 +7,7 @@
     "approve": "Aprobar",
     "reject": "Rechazar",
     "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar esto?",
     "edit": "Editar",
     "continue": "Continuar",
     "back": "Atrás",

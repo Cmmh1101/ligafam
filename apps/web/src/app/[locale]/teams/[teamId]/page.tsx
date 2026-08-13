@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { approveRequestAction, rejectRequestAction, removeAdminAction } from "./actions";
 import { createAdminInviteAction, revokeAdminInviteAction } from "./admin-invite/actions";
 
@@ -304,14 +305,11 @@ export default async function TeamPage({
                     {isSelf ? ` (${t("team.you")})` : ""}
                   </span>
                   {!isSelf && (
-                    <form action={removeWithId}>
-                      <button
-                        type="submit"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
-                      >
-                        {t("team.removeAdmin")}
-                      </button>
-                    </form>
+                    <ConfirmDeleteButton
+                      action={removeWithId}
+                      label={t("team.removeAdmin")}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+                    />
                   )}
                 </li>
               );

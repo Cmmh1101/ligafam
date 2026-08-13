@@ -1,6 +1,7 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { addPlayerAction, toggleSelfLinkAction, removePlayerAction } from "./actions";
 
 export default async function RosterPage({ params }: { params: Promise<{ teamId: string }> }) {
@@ -97,14 +98,11 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
                       {isLinked ? t("team.linkedToMe") : t("team.linkToMe")}
                     </button>
                   </form>
-                  <form action={removeForPlayer}>
-                    <button
-                      type="submit"
-                      className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
-                    >
-                      {t("common.delete")}
-                    </button>
-                  </form>
+                  <ConfirmDeleteButton
+                    action={removeForPlayer}
+                    label={t("common.delete")}
+                    className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+                  />
                 </div>
               </li>
             );

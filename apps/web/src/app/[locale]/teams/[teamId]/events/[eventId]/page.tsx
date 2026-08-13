@@ -6,6 +6,7 @@ import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
 import { GameScorePanel } from "@/components/games/game-score-panel";
 import { LineupSetup } from "@/components/games/lineup-setup";
 import { EventTabs } from "@/components/events/event-tabs";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { claimSnackAction, deleteSnackAction, deleteEventAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
@@ -317,14 +318,11 @@ export default async function EventDetailPage({
             >
               {t("common.edit")}
             </a>
-            <form action={deleteEvent}>
-              <button
-                type="submit"
-                className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
-              >
-                {t("common.delete")}
-              </button>
-            </form>
+            <ConfirmDeleteButton
+              action={deleteEvent}
+              label={t("common.delete")}
+              className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+            />
           </div>
         )}
       </header>
