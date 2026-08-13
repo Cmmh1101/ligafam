@@ -1,12 +1,24 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import type { Metadata, Viewport } from "next";
+import { OfflineBanner } from "@/components/offline-banner";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "LigaFam",
   description: "Tu equipo, tu temporada, tu idioma.",
-  manifest: "/manifest.json"
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LigaFam"
+  },
+  // Next's appleWebApp.capable only emits the modern "mobile-web-app-capable"
+  // tag -- iOS Safari versions before 16.4 only honor the apple-prefixed one
+  // for standalone "Add to Home Screen" mode, so it's added explicitly here.
+  other: {
+    "apple-mobile-web-app-capable": "yes"
+  }
 };
 
 export const viewport: Viewport = {
@@ -26,6 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale}>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <OfflineBanner />
           {children}
         </NextIntlClientProvider>
       </body>

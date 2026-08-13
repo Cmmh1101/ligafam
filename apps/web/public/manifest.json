@@ -2,7 +2,7 @@
   "name": "LigaFam",
   "short_name": "LigaFam",
   "description": "Tu equipo, tu temporada, tu idioma.",
-  "start_url": "/es",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
