@@ -53,9 +53,14 @@ export default async function EventsPage({
   const eventIds = (events ?? []).map((e) => e.id);
   const { data: gameRows } =
     eventIds.length > 0
-      ? await supabase.from("games").select("event_id, status").in("event_id", eventIds)
+      ? await supabase.from("games").select("event_id, status, our_score, opponent_score").in("event_id", eventIds)
       : { data: [] };
-  const statusByEvent = new Map((gameRows ?? []).map((g) => [g.event_id, g.status]));
+  const gameByEvent = new Map(
+    (gameRows ?? []).map((g) => [
+      g.event_id,
+      { status: g.status, ourScore: g.our_score, opponentScore: g.opponent_score }
+    ])
+  );
 
   const today = new Date();
   const todayKey = dateKey(today);
@@ -73,7 +78,7 @@ export default async function EventsPage({
     const key = dateKey(new Date(event.starts_at));
     hasEventDay.add(key);
     if (!firstEventIdByDay.has(key)) firstEventIdByDay.set(key, event.id);
-    if (statusByEvent.get(event.id) === "live" || key === todayKey) {
+    if (gameByEvent.get(event.id)?.status === "live" || key === todayKey) {
       liveOrTodayDay.add(key);
     }
   }
@@ -157,7 +162,15 @@ export default async function EventsPage({
       ) : (
         <ul className="flex flex-col gap-2">
           {events.map((event) => {
-            const isLive = statusByEvent.get(event.id) === "live";
+            const game = gameByEvent.get(event.id);
+            const isLive = game?.status === "live";
+            const isFinal = game?.status === "final";
+            const resultColor =
+              game && game.ourScore > game.opponentScore
+                ? "text-green-600"
+                : game && game.ourScore < game.opponentScore
+                  ? "text-red-600"
+                  : "text-slate-500";
             return (
               <li key={event.id}>
                 <a
@@ -173,6 +186,11 @@ export default async function EventsPage({
                       <span className="flex items-center gap-1 text-xs font-semibold uppercase text-red-600">
                         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />
                         {t("game.live")}
+                      </span>
+                    ) : isFinal && game ? (
+                      <span className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
+                        {t("game.final")} | (<span className={resultColor}>{game.ourScore}</span>-
+                        {game.opponentScore})
                       </span>
                     ) : (
                       <span className="text-xs text-slate-500">{t(`events.type.${event.type}`)}</span>
