@@ -23,6 +23,8 @@ type Game = {
   opponent_pitcher_name: string | null;
   opponent_pitcher_number: string | null;
   current_opponent_batter_id: string | null;
+  our_pitcher_pitch_count: number;
+  opponent_pitcher_pitch_count: number;
 };
 
 type RosterPlayer = {
@@ -242,8 +244,11 @@ export function GameScorePanel({
     ((game.inning_half === "bottom" && game.home_or_away === "home") ||
       (game.inning_half === "top" && game.home_or_away === "away"));
 
+  const showBattingIndicator = game.home_or_away !== null;
+
   let battingDisplay: string | null = null;
   let pitchingDisplay: string | null = null;
+  let pitchCount: number | null = null;
   if (game.home_or_away !== null) {
     if (isOurHalf) {
       battingDisplay = playerName(game.current_batter_player_id);
@@ -253,9 +258,11 @@ export function GameScorePanel({
               game.opponent_pitcher_number ? ` #${game.opponent_pitcher_number}` : ""
             }`.trim()
           : t("game.opponentPitcherUnset");
+      pitchCount = game.opponent_pitcher_pitch_count;
     } else {
       battingDisplay = opponentBatterName(game.current_opponent_batter_id);
       pitchingDisplay = playerName(game.current_pitcher_player_id);
+      pitchCount = game.our_pitcher_pitch_count;
     }
   }
 
@@ -265,7 +272,8 @@ export function GameScorePanel({
 
       <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase text-slate-500">
+          <span className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
+            {isLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />}
             {t(`game.${game.status}` as "game.live" | "game.final" | "game.scheduled")}
           </span>
           {game.inning_half && (
@@ -279,12 +287,22 @@ export function GameScorePanel({
         <div className="flex items-center justify-between text-2xl font-semibold text-slate-900">
           <div className="flex flex-col items-center">
             <span>{game.our_score}</span>
-            <span className="text-xs font-normal text-slate-500">{t("game.us")}</span>
+            <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
+              {showBattingIndicator && isOurHalf && (
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-label={t("game.battingNowLabel")} />
+              )}
+              {t("game.us")}
+            </span>
           </div>
           <span className="text-slate-300">–</span>
           <div className="flex flex-col items-center">
             <span>{game.opponent_score}</span>
-            <span className="text-xs font-normal text-slate-500">{opponentLabel}</span>
+            <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
+              {showBattingIndicator && !isOurHalf && (
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-label={t("game.battingNowLabel")} />
+              )}
+              {opponentLabel}
+            </span>
           </div>
         </div>
 
@@ -315,6 +333,8 @@ export function GameScorePanel({
             {pitchingDisplay && (
               <span>
                 {t("game.pitching")}: {pitchingDisplay}
+                {pitchCount !== null &&
+                  ` | ${t("game.pitchCountAbbrev")}: ${String(pitchCount).padStart(2, "0")}`}
               </span>
             )}
           </div>

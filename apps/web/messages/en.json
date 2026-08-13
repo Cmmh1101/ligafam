@@ -125,6 +125,9 @@
     "notFound": "Event not found, or you're not a member of this team",
     "rsvpSection": "RSVP",
     "noRosterYet": "No active roster players yet",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
     "type": {
       "game": "Game",
       "practice": "Practice",
@@ -201,7 +204,9 @@
     "opponentPitcherLabel": "Opponent pitcher",
     "opponentPitcherName": "Name",
     "opponentPitcherNumber": "#",
-    "nextOpponentBatter": "Next opponent batter"
+    "nextOpponentBatter": "Next opponent batter",
+    "pitchCountAbbrev": "P",
+    "battingNowLabel": "Currently batting"
   },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",

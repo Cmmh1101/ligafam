@@ -218,6 +218,8 @@ export type Database = {
           opponent_pitcher_name: string | null;
           opponent_pitcher_number: string | null;
           current_opponent_batter_id: string | null;
+          our_pitcher_pitch_count: number;
+          opponent_pitcher_pitch_count: number;
           started_at: string | null;
           ended_at: string | null;
         },
@@ -238,6 +240,8 @@ export type Database = {
           opponent_pitcher_name?: string | null;
           opponent_pitcher_number?: string | null;
           current_opponent_batter_id?: string | null;
+          our_pitcher_pitch_count?: number;
+          opponent_pitcher_pitch_count?: number;
           started_at?: string | null;
           ended_at?: string | null;
         }

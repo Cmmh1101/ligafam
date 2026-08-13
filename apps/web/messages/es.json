@@ -125,6 +125,9 @@
     "notFound": "Evento no encontrado, o no eres miembro de este equipo",
     "rsvpSection": "Asistencia",
     "noRosterYet": "Aún no hay jugadores activos en el roster",
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "today": "Hoy",
     "type": {
       "game": "Partido",
       "practice": "Práctica",
@@ -201,7 +204,9 @@
     "opponentPitcherLabel": "Lanzador rival",
     "opponentPitcherName": "Nombre",
     "opponentPitcherNumber": "#",
-    "nextOpponentBatter": "Siguiente bateador rival"
+    "nextOpponentBatter": "Siguiente bateador rival",
+    "pitchCountAbbrev": "P",
+    "battingNowLabel": "Bateando ahora"
   },
   "errors": {
     "notAuthenticated": "Debes iniciar sesión para continuar",
