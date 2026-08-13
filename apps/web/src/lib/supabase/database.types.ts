@@ -342,6 +342,40 @@ export type Database = {
           accepted_by?: string | null;
         }
       >;
+      push_subscriptions: TableDef<
+        {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth_key: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth_key: string;
+          created_at?: string;
+        }
+      >;
+      notification_log: TableDef<
+        {
+          id: string;
+          user_id: string;
+          event_id: string;
+          notification_type: string;
+          sent_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          event_id: string;
+          notification_type: string;
+          sent_at?: string;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -470,6 +504,10 @@ export type Database = {
       remove_team_admin: {
         Args: { p_team_member_id: string };
         Returns: Database["public"]["Tables"]["team_members"]["Row"];
+      };
+      upsert_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth_key: string };
+        Returns: Database["public"]["Tables"]["push_subscriptions"]["Row"];
       };
     };
     Enums: {

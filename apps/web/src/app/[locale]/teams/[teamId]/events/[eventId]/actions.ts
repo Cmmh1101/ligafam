@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { toUtcIso } from "@/lib/datetime";
 import type { EventType } from "@/lib/supabase/database.types";
+import { approvedTeamMemberIds } from "@/lib/push/recipients";
+import { claimRecipients } from "@/lib/push/claim";
+import { sendPushToUsers } from "@/lib/push/send";
 
 const EVENT_TYPES: EventType[] = ["game", "practice", "other"];
 
@@ -70,6 +73,48 @@ export async function deleteEventAction(locale: string, teamId: string, eventId:
   await supabase.from("events").delete().eq("id", eventId).eq("team_id", teamId);
 
   redirect(`/${locale}/teams/${teamId}/events`);
+}
+
+// Called client-side (not awaited) right after start_game succeeds, from
+// game-score-panel.tsx. Re-reads events/games through the request-scoped
+// client -- RLS's "members read" policy on both doubles as the
+// membership check (a non-member's select returns nothing), and
+// requiring games.status==='live' scopes this to real, already-started
+// games. claimRecipients is what makes this safe if two admins both
+// call start_game for the same game at once (start_game itself is
+// idempotent, but both callers would otherwise double-notify).
+export async function notifyGameStartedAction(teamId: string, eventId: string, locale: string) {
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, opponent_name")
+    .eq("id", eventId)
+    .eq("team_id", teamId)
+    .maybeSingle();
+  if (!event) return;
+
+  const { data: game } = await supabase
+    .from("games")
+    .select("status")
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!game || game.status !== "live") return;
+
+  try {
+    const recipientIds = await approvedTeamMemberIds(teamId, { excludeUserId: user.id });
+    const claimed = await claimRecipients(eventId, "game_live", recipientIds);
+    await sendPushToUsers(claimed, "game_live", {
+      opponent: event.opponent_name ?? undefined,
+      url: `/${locale}/teams/${teamId}/events/${eventId}`
+    });
+  } catch (err) {
+    console.error("[notifyGameStartedAction] failed", err);
+  }
 }
 
 export async function claimSnackAction(

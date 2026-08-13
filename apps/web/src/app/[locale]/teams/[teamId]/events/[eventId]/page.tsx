@@ -334,6 +334,8 @@ export default async function EventDetailPage({
           boardContent={
             <GameScorePanel
               eventId={eventId}
+              teamId={teamId}
+              locale={locale}
               initialGame={game}
               isApprovedAdmin={isApprovedAdmin}
               opponentName={event.opponent_name}

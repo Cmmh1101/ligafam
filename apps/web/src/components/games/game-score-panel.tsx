@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
 import { BaseDiamond } from "@/components/games/base-diamond";
+import { notifyGameStartedAction } from "@/app/[locale]/teams/[teamId]/events/[eventId]/actions";
 
 type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
 
@@ -47,6 +48,8 @@ type OpponentBatter = {
 
 export function GameScorePanel({
   eventId,
+  teamId,
+  locale,
   initialGame,
   isApprovedAdmin,
   opponentName,
@@ -54,6 +57,8 @@ export function GameScorePanel({
   initialOpponentLineup
 }: {
   eventId: string;
+  teamId: string;
+  locale: string;
   initialGame: Game | null;
   isApprovedAdmin: boolean;
   opponentName: string | null;
@@ -134,7 +139,10 @@ export function GameScorePanel({
       setError(t(rpcErrorKey(startError.message)));
       return;
     }
-    if (data) setGame(data as Game);
+    if (data) {
+      setGame(data as Game);
+      notifyGameStartedAction(teamId, eventId, locale).catch(() => {});
+    }
   }
 
   async function addRun(scoringTeam: "us" | "opponent") {

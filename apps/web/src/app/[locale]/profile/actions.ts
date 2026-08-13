@@ -33,3 +33,20 @@ export async function updateProfileAction(locale: string, formData: FormData) {
   revalidatePath(`/${locale}`);
   revalidatePath(`/${locale}/profile`);
 }
+
+export async function subscribeToPushAction(subscription: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}) {
+  const supabase = await createClient();
+  await supabase.rpc("upsert_push_subscription", {
+    p_endpoint: subscription.endpoint,
+    p_p256dh: subscription.keys.p256dh,
+    p_auth_key: subscription.keys.auth
+  });
+}
+
+export async function unsubscribeFromPushAction(endpoint: string) {
+  const supabase = await createClient();
+  await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+}

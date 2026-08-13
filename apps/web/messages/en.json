@@ -217,6 +217,14 @@
       "third": "Third base"
     }
   },
+  "notifications": {
+    "title": "Push notifications",
+    "description": "Get notified about new games, live scores, and reminders for this team.",
+    "enable": "Enable notifications",
+    "disable": "Disable notifications",
+    "unsupported": "Push notifications aren't supported in this browser. On iPhone, add this app to your home screen first.",
+    "permissionDenied": "Notifications are blocked for this site. Enable them in your browser settings to turn this on."
+  },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",
     "notAuthorized": "You don't have permission to do this",

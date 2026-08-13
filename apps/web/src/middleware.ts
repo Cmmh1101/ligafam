@@ -32,7 +32,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static assets, images, and the service worker
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:svg|png|jpg|jpeg|webp)$).*)"
+    // Skip static assets, images, the service worker, and API routes
+    // (e.g. the cron-triggered /api/cron/reminders has no session cookie
+    // to refresh, so running this middleware for it is a pointless no-op)
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|api|.*\\.(?:svg|png|jpg|jpeg|webp)$).*)"
   ]
 };

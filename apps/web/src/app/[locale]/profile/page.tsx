@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfileAction } from "./actions";
+import { PushToggle } from "@/components/notifications/push-toggle";
 
 export default async function ProfilePage({
   searchParams
@@ -71,6 +72,8 @@ export default async function ProfilePage({
           {t("common.save")}
         </button>
       </form>
+
+      <PushToggle />
     </main>
   );
 }

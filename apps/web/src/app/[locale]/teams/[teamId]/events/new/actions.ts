@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { toUtcIso } from "@/lib/datetime";
 import type { EventType } from "@/lib/supabase/database.types";
+import { approvedTeamMemberIds } from "@/lib/push/recipients";
+import { claimRecipients } from "@/lib/push/claim";
+import { sendPushToUsers } from "@/lib/push/send";
 
 const EVENT_TYPES: EventType[] = ["game", "practice", "other"];
 
@@ -56,6 +59,23 @@ export async function createEventAction(locale: string, teamId: string, formData
 
   if (!event) {
     return;
+  }
+
+  if (type === "game") {
+    // Awaited (not fire-and-forget) before redirect() -- redirect() throws
+    // to short-circuit this action, and an un-awaited call issued right
+    // before that has no guarantee of finishing on Netlify's Functions
+    // runtime. A send failure must not block the redirect, hence the catch.
+    try {
+      const recipientIds = await approvedTeamMemberIds(teamId, { excludeUserId: user.id });
+      const claimed = await claimRecipients(event.id, "game_scheduled", recipientIds);
+      await sendPushToUsers(claimed, "game_scheduled", {
+        opponent: opponentName,
+        url: `/${locale}/teams/${teamId}/events/${event.id}`
+      });
+    } catch (err) {
+      console.error("[createEventAction] notifyGameScheduled failed", err);
+    }
   }
 
   redirect(`/${locale}/teams/${teamId}/events/${event.id}`);
