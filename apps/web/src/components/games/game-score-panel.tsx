@@ -1,11 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
 import { BaseDiamond } from "@/components/games/base-diamond";
 import { notifyGameStartedAction } from "@/app/[locale]/teams/[teamId]/events/[eventId]/actions";
+import { queueAction, flushScoreOutbox, pendingScoreCount, type OutboxAction } from "@/lib/offline/db";
+import {
+  applyCountEvent,
+  applyRunEvent,
+  applyBaseRunner,
+  applyHomeOrAway,
+  applyAdvanceBatter,
+  applyAdvanceOpponentBatter
+} from "@/lib/scoring/engine";
 
 type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
 
@@ -27,6 +37,7 @@ type Game = {
   current_opponent_batter_id: string | null;
   our_pitcher_pitch_count: number;
   opponent_pitcher_pitch_count: number;
+  last_pitch_charged_to: string | null;
   runner_on_first: boolean;
   runner_on_second: boolean;
   runner_on_third: boolean;
@@ -46,6 +57,21 @@ type OpponentBatter = {
   jersey_number: string | null;
 };
 
+// A network failure resolves with error.code === "" (empty string); a real
+// Postgres exception always carries a non-empty SQLSTATE (e.g. "P0001" for
+// the plain `raise exception` calls used throughout this app's RPCs). Using
+// this instead of matching against rpc-errors.ts's mapped-code list, since
+// that list is deliberately incomplete (only covers codes the UI can
+// actually trigger today) and "unmapped" would be a fragile stand-in for
+// "network failure."
+function looksOffline(error: { code?: string } | null): boolean {
+  return !navigator.onLine || !error?.code;
+}
+
+function isFatalSyncError(err: unknown): boolean {
+  return !!(err as { code?: string } | null)?.code;
+}
+
 export function GameScorePanel({
   eventId,
   teamId,
@@ -54,6 +80,7 @@ export function GameScorePanel({
   isApprovedAdmin,
   opponentName,
   roster,
+  initialLineup,
   initialOpponentLineup
 }: {
   eventId: string;
@@ -63,6 +90,7 @@ export function GameScorePanel({
   isApprovedAdmin: boolean;
   opponentName: string | null;
   roster: RosterPlayer[];
+  initialLineup: string[];
   initialOpponentLineup: OpponentBatter[];
 }) {
   const t = useTranslations();
@@ -72,6 +100,22 @@ export function GameScorePanel({
   const [opponentLineup, setOpponentLineup] = useState<OpponentBatter[]>(initialOpponentLineup);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncFailedCount, setSyncFailedCount] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const opponentBatterIds = opponentLineup.map((o) => o.id);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Guarded behind `mounted` as cheap insurance against Dexie/IndexedDB
+  // running during Next's SSR pass of this client component -- Dexie itself
+  // resolves to a null backend under Node rather than throwing, but nothing
+  // in this app has exercised that path until this feature, so the guard
+  // costs nothing and removes the doubt.
+  const pendingCount =
+    useLiveQuery(() => (mounted && game ? pendingScoreCount(game.id) : Promise.resolve(0)), [mounted, game?.id]) ?? 0;
 
   // Filtered on event_id (not id) because a viewer who loaded this page
   // before the admin started the game has no game id yet to subscribe by --
@@ -113,6 +157,82 @@ export function GameScorePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game?.id, game?.current_opponent_batter_id]);
 
+  // Replays one queued action for real against the server -- used both by
+  // the reconnect-flush effect below.
+  async function replayAction(action: OutboxAction) {
+    switch (action.kind) {
+      case "score_count": {
+        const { error: rpcError } = await supabase.rpc("record_count_event", {
+          p_game_id: action.gameId,
+          p_event_type: action.eventType,
+          p_delta: action.delta
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_run": {
+        const { error: rpcError } = await supabase.rpc("record_score_event", {
+          p_game_id: action.gameId,
+          p_runs: action.runs,
+          p_scoring_team: action.scoringTeam
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_base": {
+        const { error: rpcError } = await supabase.rpc("set_base_runner", {
+          p_game_id: action.gameId,
+          p_base: action.base,
+          p_occupied: action.occupied
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_home_or_away": {
+        const { error: rpcError } = await supabase.rpc("set_home_or_away", {
+          p_game_id: action.gameId,
+          p_home_or_away: action.value
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_advance_batter": {
+        const { error: rpcError } = await supabase.rpc("advance_batter", { p_game_id: action.gameId });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_advance_opponent_batter": {
+        const { error: rpcError } = await supabase.rpc("advance_opponent_batter", { p_game_id: action.gameId });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      default:
+        // rsvp_update/chat_message/snack_claim -- not this component's concern.
+        return;
+    }
+  }
+
+  // Flushes on reconnect, and once on mount in case the app was reloaded
+  // while already back online with actions still queued from a prior
+  // session.
+  useEffect(() => {
+    if (!game) return;
+
+    async function flush() {
+      const countBefore = await pendingScoreCount(game!.id);
+      if (countBefore === 0) return;
+      const result = await flushScoreOutbox(game!.id, replayAction, isFatalSyncError);
+      if (!result.ok && result.reason === "fatal") {
+        setSyncFailedCount(countBefore);
+      }
+    }
+
+    if (navigator.onLine) flush();
+    window.addEventListener("online", flush);
+    return () => window.removeEventListener("online", flush);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id]);
+
   function playerName(id: string | null): string | null {
     if (!id) return null;
     const player = roster.find((p) => p.id === id);
@@ -149,25 +269,93 @@ export function GameScorePanel({
     if (!game) return;
     setLoading(true);
     setError(null);
+    const offlineAction: OutboxAction = { kind: "score_run", gameId: game.id, scoringTeam, runs: 1 };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyRunEvent(game, 1, scoringTeam) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
     const { error: runError } = await supabase.rpc("record_score_event", {
       p_game_id: game.id,
       p_runs: 1,
       p_scoring_team: scoringTeam
     });
     setLoading(false);
-    if (runError) setError(t(rpcErrorKey(runError.message)));
+
+    if (runError) {
+      if (looksOffline(runError)) {
+        setGame({ ...game, ...applyRunEvent(game, 1, scoringTeam) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(runError.message)));
+    }
+  }
+
+  // Corrects a misclicked run without touching status/other fields. Floored
+  // at 0 server-side (0015_run_removal.sql).
+  async function removeRun(scoringTeam: "us" | "opponent") {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const offlineAction: OutboxAction = { kind: "score_run", gameId: game.id, scoringTeam, runs: -1 };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyRunEvent(game, -1, scoringTeam) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
+    const { error: runError } = await supabase.rpc("record_score_event", {
+      p_game_id: game.id,
+      p_runs: -1,
+      p_scoring_team: scoringTeam
+    });
+    setLoading(false);
+
+    if (runError) {
+      if (looksOffline(runError)) {
+        setGame({ ...game, ...applyRunEvent(game, -1, scoringTeam) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(runError.message)));
+    }
   }
 
   async function addCount(eventType: "ball" | "strike" | "out") {
     if (!game) return;
     setLoading(true);
     setError(null);
-    const { error: countError } = await supabase.rpc("record_count_event", {
+    const offlineAction: OutboxAction = { kind: "score_count", gameId: game.id, eventType, delta: 1 };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyCountEvent(game, eventType, 1, initialLineup, opponentBatterIds) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error: countError } = await supabase.rpc("record_count_event", {
       p_game_id: game.id,
       p_event_type: eventType
     });
     setLoading(false);
-    if (countError) setError(t(rpcErrorKey(countError.message)));
+
+    if (countError) {
+      if (looksOffline(countError)) {
+        setGame({ ...game, ...applyCountEvent(game, eventType, 1, initialLineup, opponentBatterIds) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(countError.message)));
+      return;
+    }
+    if (data) setGame(data as Game);
   }
 
   // Corrects a misclicked ball/strike/out without the +1 path's threshold
@@ -177,26 +365,62 @@ export function GameScorePanel({
     if (!game) return;
     setLoading(true);
     setError(null);
-    const { error: countError } = await supabase.rpc("record_count_event", {
+    const offlineAction: OutboxAction = { kind: "score_count", gameId: game.id, eventType, delta: -1 };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyCountEvent(game, eventType, -1, initialLineup, opponentBatterIds) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error: countError } = await supabase.rpc("record_count_event", {
       p_game_id: game.id,
       p_event_type: eventType,
       p_delta: -1
     });
     setLoading(false);
-    if (countError) setError(t(rpcErrorKey(countError.message)));
+
+    if (countError) {
+      if (looksOffline(countError)) {
+        setGame({ ...game, ...applyCountEvent(game, eventType, -1, initialLineup, opponentBatterIds) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(countError.message)));
+      return;
+    }
+    if (data) setGame(data as Game);
   }
 
   async function setBaseRunner(base: "first" | "second" | "third", occupied: boolean) {
     if (!game) return;
     setLoading(true);
     setError(null);
+    const offlineAction: OutboxAction = { kind: "score_base", gameId: game.id, base, occupied };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyBaseRunner(game, base, occupied) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
     const { error: baseError } = await supabase.rpc("set_base_runner", {
       p_game_id: game.id,
       p_base: base,
       p_occupied: occupied
     });
     setLoading(false);
-    if (baseError) setError(t(rpcErrorKey(baseError.message)));
+
+    if (baseError) {
+      if (looksOffline(baseError)) {
+        setGame({ ...game, ...applyBaseRunner(game, base, occupied) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(baseError.message)));
+    }
   }
 
   async function finalizeGame() {
@@ -212,30 +436,81 @@ export function GameScorePanel({
     if (!game) return;
     setLoading(true);
     setError(null);
+    const offlineAction: OutboxAction = { kind: "score_home_or_away", gameId: game.id, value };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyHomeOrAway(game, value) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
     const { error: setError_ } = await supabase.rpc("set_home_or_away", {
       p_game_id: game.id,
       p_home_or_away: value
     });
     setLoading(false);
-    if (setError_) setError(t(rpcErrorKey(setError_.message)));
+
+    if (setError_) {
+      if (looksOffline(setError_)) {
+        setGame({ ...game, ...applyHomeOrAway(game, value) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(setError_.message)));
+    }
   }
 
   async function nextBatter() {
     if (!game) return;
     setLoading(true);
     setError(null);
+    const offlineAction: OutboxAction = { kind: "score_advance_batter", gameId: game.id };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyAdvanceBatter(game, initialLineup) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
     const { error: advanceError } = await supabase.rpc("advance_batter", { p_game_id: game.id });
     setLoading(false);
-    if (advanceError) setError(t(rpcErrorKey(advanceError.message)));
+
+    if (advanceError) {
+      if (looksOffline(advanceError)) {
+        setGame({ ...game, ...applyAdvanceBatter(game, initialLineup) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(advanceError.message)));
+    }
   }
 
   async function nextOpponentBatter() {
     if (!game) return;
     setLoading(true);
     setError(null);
+    const offlineAction: OutboxAction = { kind: "score_advance_opponent_batter", gameId: game.id };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyAdvanceOpponentBatter(game, opponentBatterIds) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
     const { error: advanceError } = await supabase.rpc("advance_opponent_batter", { p_game_id: game.id });
     setLoading(false);
-    if (advanceError) setError(t(rpcErrorKey(advanceError.message)));
+
+    if (advanceError) {
+      if (looksOffline(advanceError)) {
+        setGame({ ...game, ...applyAdvanceOpponentBatter(game, opponentBatterIds) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(advanceError.message)));
+    }
   }
 
   if (!game) {
@@ -294,6 +569,17 @@ export function GameScorePanel({
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-medium text-slate-500">{t("game.title")}</h2>
+
+      {pendingCount > 0 && (
+        <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm font-medium text-amber-800">
+          {t("game.pendingSync", { count: pendingCount })}
+        </p>
+      )}
+      {syncFailedCount !== null && (
+        <p className="rounded-lg bg-red-100 px-3 py-2 text-sm font-medium text-red-800">
+          {t("game.syncFailed", { count: syncFailedCount })}
+        </p>
+      )}
 
       <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4">
         <div className="flex items-center justify-between">
@@ -417,22 +703,39 @@ export function GameScorePanel({
           </div>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => addRun("us")}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-            >
-              {t("game.addRunUs")}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => addRun("opponent")}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-            >
-              {t("game.addRunOpponent")}
-            </button>
+            {(
+              [
+                { team: "us" as const, label: t("game.addRunUs"), value: game.our_score },
+                { team: "opponent" as const, label: t("game.addRunOpponent"), value: game.opponent_score }
+              ]
+            ).map(({ team, label, value }) => (
+              <div
+                key={team}
+                className="flex flex-1 items-center justify-between rounded-lg border border-slate-300 px-2 py-2"
+              >
+                <button
+                  type="button"
+                  disabled={loading || value === 0}
+                  onClick={() => removeRun(team)}
+                  aria-label={t("game.removeRunAriaLabel", { team: label })}
+                  title={t("game.removeRunAriaLabel", { team: label })}
+                  className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-30"
+                >
+                  −
+                </button>
+                <span className="text-sm font-medium text-slate-700">{label}</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => addRun(team)}
+                  aria-label={label}
+                  title={label}
+                  className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  +
+                </button>
+              </div>
+            ))}
           </div>
 
           <div className="flex gap-2">
@@ -487,8 +790,9 @@ export function GameScorePanel({
 
           <button
             type="button"
-            disabled={loading}
+            disabled={loading || pendingCount > 0}
             onClick={finalizeGame}
+            title={pendingCount > 0 ? t("game.finalizeDisabledPendingSync") : undefined}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {t("game.finalizeGame")}
