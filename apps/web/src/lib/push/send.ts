@@ -2,11 +2,25 @@ import webpush from "web-push";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { NotificationType } from "@/lib/push/claim";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+// Lazy, not module-scope: Next.js imports every API route module during its
+// build-time "collecting page data" pass (which imports this file via
+// /api/cron/reminders), so a module-scope setVapidDetails() call throws and
+// fails the ENTIRE production build the moment any one of these env vars is
+// missing -- not just at request time on the affected route. Deferring the
+// call until a send is actually attempted confines a missing/misconfigured
+// var to that one runtime call instead.
+let vapidConfigured = false;
+function ensureVapidConfigured() {
+  if (vapidConfigured) return;
+  const subject = process.env.VAPID_SUBJECT;
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!subject || !publicKey || !privateKey) {
+    throw new Error("Push notifications are not configured (missing VAPID_SUBJECT/VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY)");
+  }
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+  vapidConfigured = true;
+}
 
 type Locale = "es" | "en";
 
@@ -42,6 +56,7 @@ export async function sendPushToUsers(
 ): Promise<void> {
   if (userIds.length === 0) return;
 
+  ensureVapidConfigured();
   const supabase = createServiceClient();
 
   const [{ data: profiles }, { data: subscriptions }] = await Promise.all([
