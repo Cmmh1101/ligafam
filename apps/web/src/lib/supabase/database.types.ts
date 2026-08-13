@@ -220,6 +220,10 @@ export type Database = {
           current_opponent_batter_id: string | null;
           our_pitcher_pitch_count: number;
           opponent_pitcher_pitch_count: number;
+          last_pitch_charged_to: string | null;
+          runner_on_first: boolean;
+          runner_on_second: boolean;
+          runner_on_third: boolean;
           started_at: string | null;
           ended_at: string | null;
         },
@@ -242,6 +246,10 @@ export type Database = {
           current_opponent_batter_id?: string | null;
           our_pitcher_pitch_count?: number;
           opponent_pitcher_pitch_count?: number;
+          last_pitch_charged_to?: string | null;
+          runner_on_first?: boolean;
+          runner_on_second?: boolean;
+          runner_on_third?: boolean;
           started_at?: string | null;
           ended_at?: string | null;
         }
@@ -391,6 +399,10 @@ export type Database = {
       };
       set_opponent_pitcher: {
         Args: { p_game_id: string; p_name: string | null; p_number: string | null };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      set_base_runner: {
+        Args: { p_game_id: string; p_base: string; p_occupied: boolean };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };

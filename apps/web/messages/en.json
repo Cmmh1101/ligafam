@@ -210,7 +210,12 @@
     "opponentPitcherNumber": "#",
     "nextOpponentBatter": "Next opponent batter",
     "pitchCountAbbrev": "P",
-    "battingNowLabel": "Currently batting"
+    "battingNowLabel": "Currently batting",
+    "base": {
+      "first": "First base",
+      "second": "Second base",
+      "third": "Third base"
+    }
   },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
+import { BaseDiamond } from "@/components/games/base-diamond";
 
 type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
 
@@ -25,6 +26,9 @@ type Game = {
   current_opponent_batter_id: string | null;
   our_pitcher_pitch_count: number;
   opponent_pitcher_pitch_count: number;
+  runner_on_first: boolean;
+  runner_on_second: boolean;
+  runner_on_third: boolean;
 };
 
 type RosterPlayer = {
@@ -174,6 +178,19 @@ export function GameScorePanel({
     if (countError) setError(t(rpcErrorKey(countError.message)));
   }
 
+  async function setBaseRunner(base: "first" | "second" | "third", occupied: boolean) {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const { error: baseError } = await supabase.rpc("set_base_runner", {
+      p_game_id: game.id,
+      p_base: base,
+      p_occupied: occupied
+    });
+    setLoading(false);
+    if (baseError) setError(t(rpcErrorKey(baseError.message)));
+  }
+
   async function finalizeGame() {
     if (!game) return;
     setLoading(true);
@@ -305,6 +322,15 @@ export function GameScorePanel({
             </span>
           </div>
         </div>
+
+        {isLive && (
+          <BaseDiamond
+            runnerOnFirst={game.runner_on_first}
+            runnerOnSecond={game.runner_on_second}
+            runnerOnThird={game.runner_on_third}
+            onToggleBase={isApprovedAdmin ? setBaseRunner : undefined}
+          />
+        )}
 
         {isLive && (
           <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
