@@ -33,6 +33,7 @@
     "forgotPassword": "¿Olvidaste tu contraseña?",
     "sendResetLink": "Enviar enlace de recuperación",
     "checkEmailForReset": "Revisa tu correo para restablecer tu contraseña",
+    "checkEmailToConfirm": "Enviamos un enlace de confirmación a {email}. Revisa tu bandeja de entrada para activar tu cuenta.",
     "backToSignIn": "Volver a iniciar sesión",
     "resetPasswordTitle": "Restablecer contraseña",
     "newPassword": "Nueva contraseña",

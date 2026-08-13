@@ -28,6 +28,7 @@ export function SignInForm() {
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [signupEmailSent, setSignupEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +36,7 @@ export function SignInForm() {
     setMode(next);
     setError(null);
     setResetEmailSent(false);
+    setSignupEmailSent(false);
   }
 
   async function submit(e: FormEvent) {
@@ -42,22 +44,39 @@ export function SignInForm() {
     setLoading(true);
     setError(null);
 
-    const { error } =
-      mode === "login"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({
-            email,
-            password,
-            // handle_new_user() (supabase/migrations/0001_init_schema.sql)
-            // reads raw_user_meta_data->>'full_name' into profiles.full_name
-            // -- without this, admins reviewing join requests see a blank
-            // name for every password-registered user.
-            options: { data: { full_name: fullName.trim() } }
-          });
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (error) {
+        setError(t(authErrorKey(error.message)));
+        return;
+      }
+      router.push(nextPath);
+      router.refresh();
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      // handle_new_user() (supabase/migrations/0001_init_schema.sql) reads
+      // raw_user_meta_data->>'full_name' into profiles.full_name -- without
+      // this, admins reviewing join requests see a blank name for every
+      // password-registered user.
+      options: { data: { full_name: fullName.trim() } }
+    });
 
     setLoading(false);
     if (error) {
       setError(t(authErrorKey(error.message)));
+      return;
+    }
+
+    // No session means Supabase's "confirm email" setting is on -- the
+    // account exists but can't sign in until the link in that email is
+    // clicked, so there's nothing to redirect into yet.
+    if (!data.session) {
+      setSignupEmailSent(true);
       return;
     }
 
@@ -128,6 +147,22 @@ export function SignInForm() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
+        <button
+          type="button"
+          onClick={() => switchMode("login")}
+          className="text-sm text-slate-500 underline"
+        >
+          {t("backToSignIn")}
+        </button>
+      </div>
+    );
+  }
+
+  if (mode === "register" && signupEmailSent) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-xl font-semibold text-slate-900">{t("signUp")}</h1>
+        <p className="text-slate-600">{t("checkEmailToConfirm", { email })}</p>
         <button
           type="button"
           onClick={() => switchMode("login")}

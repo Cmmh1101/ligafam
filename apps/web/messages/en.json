@@ -33,6 +33,7 @@
     "forgotPassword": "Forgot your password?",
     "sendResetLink": "Send reset link",
     "checkEmailForReset": "Check your email to reset your password",
+    "checkEmailToConfirm": "We sent a confirmation link to {email}. Check your inbox to activate your account.",
     "backToSignIn": "Back to sign in",
     "resetPasswordTitle": "Reset password",
     "newPassword": "New password",
