@@ -18,6 +18,7 @@ export default async function HomePage() {
     ageGroup: string | null;
     role: string;
     status: string;
+    record: { wins: number; losses: number; ties: number } | null;
   }[] = [];
 
   let profileFullName = "";
@@ -45,6 +46,29 @@ export default async function HomePage() {
 
     const teamById = new Map((teamRows ?? []).map((t) => [t.id, t]));
 
+    // Win-loss record shown on each team's card comes from the active
+    // season's team_season_records row, kept up to date automatically by
+    // the on_game_finalized trigger (see 0001_init_schema.sql) whenever a
+    // game's status flips to 'final' -- no recalculation needed here.
+    const { data: seasonRows } =
+      teamIds.length > 0
+        ? await supabase.from("seasons").select("id, team_id").in("team_id", teamIds).eq("is_active", true)
+        : { data: [] };
+    const seasonIdToTeamId = new Map((seasonRows ?? []).map((s) => [s.id, s.team_id]));
+    const seasonIds = (seasonRows ?? []).map((s) => s.id);
+
+    const { data: recordRows } =
+      seasonIds.length > 0
+        ? await supabase.from("team_season_records").select("season_id, wins, losses, ties").in("season_id", seasonIds)
+        : { data: [] };
+    const recordByTeamId = new Map(
+      (recordRows ?? []).flatMap((r) => {
+        const teamId = seasonIdToTeamId.get(r.season_id);
+        if (!teamId) return [];
+        return [[teamId, { wins: r.wins, losses: r.losses, ties: r.ties }] as const];
+      })
+    );
+
     teams = (memberships ?? []).flatMap((m) => {
       const team = teamById.get(m.team_id);
       if (!team) return [];
@@ -55,7 +79,8 @@ export default async function HomePage() {
           name: team.name,
           ageGroup: team.age_group,
           role: m.role,
-          status: m.status
+          status: m.status,
+          record: recordByTeamId.get(m.team_id) ?? null
         }
       ];
     });
@@ -93,11 +118,23 @@ export default async function HomePage() {
                           {team.ageGroup ? ` · ${team.ageGroup}` : ""}
                         </span>
                       </div>
-                      {team.status !== "approved" && (
-                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-                          {t(`team.status${team.status.charAt(0).toUpperCase()}${team.status.slice(1)}`)}
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-1">
+                        {team.status !== "approved" && (
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                            {t(`team.status${team.status.charAt(0).toUpperCase()}${team.status.slice(1)}`)}
+                          </span>
+                        )}
+                        {team.record && team.record.wins + team.record.losses + team.record.ties > 0 && (
+                          <span className="text-xs font-semibold">
+                            <span className="text-green-600">{team.record.wins}</span>
+                            <span className="text-slate-400">-</span>
+                            <span className="text-red-600">{team.record.losses}</span>
+                            {team.record.ties > 0 && (
+                              <span className="text-slate-500">-{team.record.ties}</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
                     </a>
                   </li>
                 ))}

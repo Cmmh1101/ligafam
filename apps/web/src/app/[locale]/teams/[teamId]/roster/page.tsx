@@ -1,7 +1,7 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { addPlayerAction, toggleSelfLinkAction } from "./actions";
+import { addPlayerAction, toggleSelfLinkAction, removePlayerAction } from "./actions";
 
 export default async function RosterPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = await params;
@@ -57,6 +57,7 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
 
   const addPlayer = addPlayerAction.bind(null, locale, teamId);
   const toggleSelfLink = toggleSelfLinkAction.bind(null, locale, teamId);
+  const removePlayer = removePlayerAction.bind(null, locale, teamId);
 
   return (
     <>
@@ -69,6 +70,7 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
           {roster.map((player) => {
             const isLinked = myLinkedPlayerIds.has(player.id);
             const toggleForPlayer = toggleSelfLink.bind(null, player.id);
+            const removeForPlayer = removePlayer.bind(null, player.id);
             return (
               <li
                 key={player.id}
@@ -82,18 +84,28 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
                     <span className="text-sm text-slate-500">#{player.jersey_number}</span>
                   )}
                 </div>
-                <form action={toggleForPlayer}>
-                  <button
-                    type="submit"
-                    className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
-                      isLinked
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-300 text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    {isLinked ? t("team.linkedToMe") : t("team.linkToMe")}
-                  </button>
-                </form>
+                <div className="flex items-center gap-3">
+                  <form action={toggleForPlayer}>
+                    <button
+                      type="submit"
+                      className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
+                        isLinked
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {isLinked ? t("team.linkedToMe") : t("team.linkToMe")}
+                    </button>
+                  </form>
+                  <form action={removeForPlayer}>
+                    <button
+                      type="submit"
+                      className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+                    >
+                      {t("common.delete")}
+                    </button>
+                  </form>
+                </div>
               </li>
             );
           })}

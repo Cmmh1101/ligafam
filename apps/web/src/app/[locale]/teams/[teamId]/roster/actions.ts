@@ -63,3 +63,34 @@ export async function toggleSelfLinkAction(locale: string, teamId: string, playe
 
   revalidatePath(`/${locale}/teams/${teamId}/roster`);
 }
+
+// Hard-deletes the player row -- season_rosters/family_links/event_rsvps/
+// game_lineup all cascade away with it (players.id has no restrict/
+// no-action FKs anywhere in the schema), and any game currently pointing
+// at this player as current_batter/current_pitcher gets nulled out.
+// That's exactly what's wanted for a genuine duplicate entry, but it also
+// means this silently destroys real RSVP/lineup history for a player who
+// has any -- there's no undo.
+export async function removePlayerAction(locale: string, teamId: string, playerId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: membership } = await supabase
+    .from("team_members")
+    .select("id")
+    .eq("team_id", teamId)
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .eq("status", "approved")
+    .maybeSingle();
+  if (!membership) return;
+
+  // Relies on the existing "players: admins delete" RLS policy — no RPC
+  // needed, a non-admin's delete is simply rejected by Postgres.
+  await supabase.from("players").delete().eq("id", playerId).eq("team_id", teamId);
+
+  revalidatePath(`/${locale}/teams/${teamId}/roster`);
+}
