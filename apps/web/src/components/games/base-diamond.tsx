@@ -26,7 +26,7 @@ function BaseMarker({
       onClick={() => onToggle?.(base, !occupied)}
       aria-label={t(`game.base.${base}`)}
       aria-pressed={occupied}
-      className={`absolute h-4 w-4 rotate-45 border-2 ${
+      className={`absolute h-6 w-6 rotate-45 border-2 ${
         occupied ? "border-yellow-500 bg-yellow-400" : "border-slate-400 bg-white"
       } ${interactive ? "cursor-pointer" : "cursor-default"} ${className}`}
     />
@@ -47,7 +47,7 @@ export function BaseDiamond({
   const interactive = !!onToggleBase;
 
   return (
-    <div className="relative mx-auto h-24 w-24">
+    <div className="relative mx-auto h-32 w-32">
       <div className="absolute inset-0 rotate-45 rounded-sm border-2 border-slate-300" />
 
       <BaseMarker
@@ -73,7 +73,7 @@ export function BaseDiamond({
       />
 
       {/* Home plate: decorative only, not a toggleable base. */}
-      <div className="absolute bottom-0 left-1/2 h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 border-2 border-slate-400 bg-slate-100" />
+      <div className="absolute bottom-0 left-1/2 h-5 w-5 -translate-x-1/2 translate-y-1/2 rotate-45 border-2 border-slate-400 bg-slate-100" />
     </div>
   );
 }

@@ -309,7 +309,7 @@ export function GameScorePanel({
           )}
         </div>
 
-        <div className="flex items-center justify-between text-2xl font-semibold text-slate-900">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-2xl font-semibold text-slate-900">
           <div className="flex flex-col items-center">
             <span>{game.our_score}</span>
             <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
@@ -319,7 +319,18 @@ export function GameScorePanel({
               {t("game.us")}
             </span>
           </div>
-          <span className="text-slate-300">–</span>
+
+          {isLive ? (
+            <BaseDiamond
+              runnerOnFirst={game.runner_on_first}
+              runnerOnSecond={game.runner_on_second}
+              runnerOnThird={game.runner_on_third}
+              onToggleBase={isApprovedAdmin ? setBaseRunner : undefined}
+            />
+          ) : (
+            <span className="text-slate-300">–</span>
+          )}
+
           <div className="flex flex-col items-center">
             <span>{game.opponent_score}</span>
             <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
@@ -330,15 +341,6 @@ export function GameScorePanel({
             </span>
           </div>
         </div>
-
-        {isLive && (
-          <BaseDiamond
-            runnerOnFirst={game.runner_on_first}
-            runnerOnSecond={game.runner_on_second}
-            runnerOnThird={game.runner_on_third}
-            onToggleBase={isApprovedAdmin ? setBaseRunner : undefined}
-          />
-        )}
 
         {isLive && (
           <div className="flex items-center justify-center gap-6 text-lg font-medium text-slate-700">
