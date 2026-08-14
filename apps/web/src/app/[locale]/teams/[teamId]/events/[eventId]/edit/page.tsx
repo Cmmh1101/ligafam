@@ -25,7 +25,7 @@ export default async function EditEventPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, type, title, opponent_name, location, starts_at, ends_at")
+    .select("id, type, title, opponent_name, location, starts_at, ends_at, visibility")
     .eq("id", eventId)
     .eq("team_id", teamId)
     .maybeSingle();
@@ -146,6 +146,21 @@ export default async function EditEventPage({
             placeholder={t("events.fields.endsAtHint")}
             className="rounded-lg border border-slate-300 px-3 py-2"
           />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700" htmlFor="visibility">
+            {t("events.fields.visibility")}
+          </label>
+          <select
+            id="visibility"
+            name="visibility"
+            defaultValue={event.visibility}
+            className="rounded-lg border border-slate-300 px-3 py-2"
+          >
+            <option value="public">{t("events.visibility.public")}</option>
+            <option value="private">{t("events.visibility.private")}</option>
+          </select>
         </div>
 
         <SubmitButton

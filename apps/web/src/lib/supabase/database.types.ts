@@ -11,6 +11,7 @@ export type EventType = "game" | "practice" | "other";
 export type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
 export type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
 export type AdminInviteStatus = "pending" | "accepted" | "revoked";
+export type EventVisibility = "public" | "private";
 
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
@@ -149,6 +150,7 @@ export type Database = {
           ends_at: string | null;
           created_by: string | null;
           created_at: string;
+          visibility: EventVisibility;
         },
         {
           id?: string;
@@ -162,6 +164,7 @@ export type Database = {
           ends_at?: string | null;
           created_by?: string | null;
           created_at?: string;
+          visibility?: EventVisibility;
         }
       >;
       event_rsvps: TableDef<

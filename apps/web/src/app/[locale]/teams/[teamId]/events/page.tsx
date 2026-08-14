@@ -46,7 +46,7 @@ export default async function EventsPage({
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, type, title, opponent_name, location, starts_at")
+    .select("id, type, title, opponent_name, location, starts_at, visibility")
     .eq("team_id", teamId)
     .order("starts_at", { ascending: true });
 
@@ -118,19 +118,26 @@ export default async function EventsPage({
             <span className="font-medium text-slate-900">
               {event.title || event.opponent_name || t(`events.type.${event.type}`)}
             </span>
-            {isLive ? (
-              <span className="flex items-center gap-1 text-xs font-semibold uppercase text-red-600">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />
-                {t("game.live")}
-              </span>
-            ) : isFinal && game ? (
-              <span className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
-                {t("game.final")} | (<span className={resultColor}>{game.ourScore}</span>-
-                {game.opponentScore})
-              </span>
-            ) : (
-              <span className="text-xs text-slate-500">{t(`events.type.${event.type}`)}</span>
-            )}
+            <div className="flex items-center gap-2">
+              {event.visibility === "private" && (
+                <span className="text-xs font-semibold uppercase text-slate-400">
+                  {t("events.visibility.private")}
+                </span>
+              )}
+              {isLive ? (
+                <span className="flex items-center gap-1 text-xs font-semibold uppercase text-red-600">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />
+                  {t("game.live")}
+                </span>
+              ) : isFinal && game ? (
+                <span className="flex items-center gap-1 text-xs font-semibold uppercase text-slate-500">
+                  {t("game.final")} | (<span className={resultColor}>{game.ourScore}</span>-
+                  {game.opponentScore})
+                </span>
+              ) : (
+                <span className="text-xs text-slate-500">{t(`events.type.${event.type}`)}</span>
+              )}
+            </div>
           </div>
           <span className="text-sm text-slate-500">{formatEventDateTime(event.starts_at, locale)}</span>
           {event.location && <span className="text-xs text-slate-500">{event.location}</span>}

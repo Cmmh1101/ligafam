@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
@@ -18,12 +18,14 @@ type RosterPlayer = {
 
 export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name: string } }) {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const supabase = createClient();
 
   const [step, setStep] = useState<Step>(initialTeam ? "role" : "code");
   const [inviteCode, setInviteCode] = useState("");
   const [role, setRole] = useState<Role>("family");
+  const [teamId, setTeamId] = useState<string | null>(initialTeam?.id ?? null);
   const [teamName, setTeamName] = useState(initialTeam?.name ?? "");
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
@@ -59,6 +61,7 @@ export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name
     }
 
     setTeamName(teamRows[0].name);
+    setTeamId(teamRows[0].id);
     setStep("role");
   }
 
@@ -121,12 +124,13 @@ export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name
   }
 
   if (step === "done") {
+    const isFan = role === "fan";
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-slate-600">{t("team.pendingApproval")}</p>
+        <p className="text-slate-600">{isFan ? t("team.joinedAsFan") : t("team.pendingApproval")}</p>
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={() => router.push(isFan && teamId ? `/${locale}/teams/${teamId}` : "/")}
           className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white"
         >
           {t("common.continue")}

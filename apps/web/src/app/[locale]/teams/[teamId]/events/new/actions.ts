@@ -18,6 +18,8 @@ export async function createEventAction(locale: string, teamId: string, formData
   const location = String(formData.get("location") ?? "").trim();
   const startsAt = String(formData.get("startsAt") ?? "");
   const endsAt = String(formData.get("endsAt") ?? "");
+  const rawVisibility = String(formData.get("visibility") ?? "public");
+  const visibility = rawVisibility === "private" ? "private" : "public";
 
   if (!startsAt) {
     return;
@@ -52,6 +54,7 @@ export async function createEventAction(locale: string, teamId: string, formData
       location: location || null,
       starts_at: toUtcIso(startsAt),
       ends_at: endsAt ? toUtcIso(endsAt) : null,
+      visibility,
       created_by: user.id
     })
     .select("id")
@@ -67,7 +70,10 @@ export async function createEventAction(locale: string, teamId: string, formData
     // before that has no guarantee of finishing on Netlify's Functions
     // runtime. A send failure must not block the redirect, hence the catch.
     try {
-      const recipientIds = await approvedTeamMemberIds(teamId, { excludeUserId: user.id });
+      const recipientIds = await approvedTeamMemberIds(teamId, {
+        excludeUserId: user.id,
+        ...(visibility === "private" ? { roles: ["admin", "family"] } : {})
+      });
       const claimed = await claimRecipients(event.id, "game_scheduled", recipientIds);
       await sendPushToUsers(claimed, "game_scheduled", {
         opponent: opponentName,

@@ -118,6 +118,21 @@ export default async function NewEventPage({ params }: { params: Promise<{ teamI
           />
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700" htmlFor="visibility">
+            {t("events.fields.visibility")}
+          </label>
+          <select
+            id="visibility"
+            name="visibility"
+            defaultValue="public"
+            className="rounded-lg border border-slate-300 px-3 py-2"
+          >
+            <option value="public">{t("events.visibility.public")}</option>
+            <option value="private">{t("events.visibility.private")}</option>
+          </select>
+        </div>
+
         <SubmitButton
           label={t("events.createEvent")}
           pendingLabel={t("common.saving")}

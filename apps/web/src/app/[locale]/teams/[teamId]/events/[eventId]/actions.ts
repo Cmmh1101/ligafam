@@ -19,6 +19,8 @@ export async function updateEventAction(locale: string, teamId: string, eventId:
   const location = String(formData.get("location") ?? "").trim();
   const startsAt = String(formData.get("startsAt") ?? "");
   const endsAt = String(formData.get("endsAt") ?? "");
+  const rawVisibility = String(formData.get("visibility") ?? "public");
+  const visibility = rawVisibility === "private" ? "private" : "public";
 
   if (!startsAt) {
     return;
@@ -40,7 +42,8 @@ export async function updateEventAction(locale: string, teamId: string, eventId:
       opponent_name: opponentName || null,
       location: location || null,
       starts_at: toUtcIso(startsAt),
-      ends_at: endsAt ? toUtcIso(endsAt) : null
+      ends_at: endsAt ? toUtcIso(endsAt) : null,
+      visibility
     })
     .eq("id", eventId)
     .eq("team_id", teamId);
@@ -92,7 +95,7 @@ export async function notifyGameStartedAction(teamId: string, eventId: string, l
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, opponent_name")
+    .select("id, opponent_name, visibility")
     .eq("id", eventId)
     .eq("team_id", teamId)
     .maybeSingle();
@@ -106,7 +109,10 @@ export async function notifyGameStartedAction(teamId: string, eventId: string, l
   if (!game || game.status !== "live") return;
 
   try {
-    const recipientIds = await approvedTeamMemberIds(teamId, { excludeUserId: user.id });
+    const recipientIds = await approvedTeamMemberIds(teamId, {
+      excludeUserId: user.id,
+      ...(event.visibility === "private" ? { roles: ["admin", "family"] } : {})
+    });
     const claimed = await claimRecipients(eventId, "game_live", recipientIds);
     await sendPushToUsers(claimed, "game_live", {
       opponent: event.opponent_name ?? undefined,

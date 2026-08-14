@@ -46,7 +46,7 @@
   },
   "roles": {
     "admin": "Administrador",
-    "family": "Familia",
+    "family": "Responsable",
     "fan": "Aficionado"
   },
   "team": {
@@ -58,6 +58,7 @@
     "chat": "Chat del equipo",
     "selectYourKid": "Selecciona a tu hijo/a en el roster",
     "pendingApproval": "Tu solicitud está pendiente de aprobación",
+    "joinedAsFan": "Ya estás dentro — ya puedes ver el equipo",
     "teamName": "Nombre del equipo",
     "ageGroup": "Categoría de edad",
     "ageGroupHint": "Opcional, ej. 10U",
@@ -142,6 +143,10 @@
       "practice": "Práctica",
       "other": "Otro"
     },
+    "visibility": {
+      "public": "Público",
+      "private": "Privado"
+    },
     "fields": {
       "type": "Tipo de evento",
       "title": "Título",
@@ -150,7 +155,8 @@
       "location": "Lugar",
       "startsAt": "Fecha y hora de inicio",
       "endsAt": "Fecha y hora de fin",
-      "endsAtHint": "Opcional"
+      "endsAtHint": "Opcional",
+      "visibility": "Visibilidad"
     }
   },
   "snacks": {

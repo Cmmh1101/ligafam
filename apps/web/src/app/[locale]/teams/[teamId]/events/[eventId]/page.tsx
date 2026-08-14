@@ -33,7 +33,7 @@ export default async function EventDetailPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, type, title, opponent_name, location, starts_at")
+    .select("id, type, title, opponent_name, location, starts_at, visibility")
     .eq("id", eventId)
     .eq("team_id", teamId)
     .maybeSingle();
@@ -298,6 +298,9 @@ export default async function EventDetailPage({
         </h1>
         <p className="text-sm text-slate-500">{formatEventDateTime(event.starts_at, locale)}</p>
         {event.location && <p className="text-sm text-slate-500">{event.location}</p>}
+        {event.visibility === "private" && (
+          <p className="text-xs font-semibold uppercase text-slate-400">{t("events.visibility.private")}</p>
+        )}
         {isApprovedAdmin && (
           <div className="flex gap-3 pt-1">
             <a
