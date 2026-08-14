@@ -234,11 +234,14 @@
   },
   "notifications": {
     "title": "Notificaciones push",
-    "description": "Recibe avisos de nuevos partidos, marcadores en vivo y recordatorios para este equipo.",
+    "description": "Recibe avisos de nuevos partidos, marcadores en vivo y recordatorios de todos los equipos a los que perteneces.",
     "enable": "Activar notificaciones",
     "disable": "Desactivar notificaciones",
     "unsupported": "Las notificaciones push no son compatibles con este navegador. En iPhone, primero agrega esta app a la pantalla de inicio.",
-    "permissionDenied": "Las notificaciones están bloqueadas para este sitio. Actívalas en la configuración de tu navegador."
+    "permissionDenied": "Las notificaciones están bloqueadas para este sitio. Actívalas en la configuración de tu navegador.",
+    "notConfigured": "Las notificaciones aún no están configuradas en este sitio. Contacta al administrador de la app.",
+    "enableFailed": "No se pudieron activar las notificaciones. Intenta de nuevo, o revisa que no estén bloqueadas para este sitio.",
+    "disableFailed": "No se pudieron desactivar las notificaciones. Intenta de nuevo."
   },
   "toast": {
     "lineupSaved": "Orden al bate guardado",

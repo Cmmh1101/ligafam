@@ -234,11 +234,14 @@
   },
   "notifications": {
     "title": "Push notifications",
-    "description": "Get notified about new games, live scores, and reminders for this team.",
+    "description": "Get notified about new games, live scores, and reminders for every team you're part of.",
     "enable": "Enable notifications",
     "disable": "Disable notifications",
     "unsupported": "Push notifications aren't supported in this browser. On iPhone, add this app to your home screen first.",
-    "permissionDenied": "Notifications are blocked for this site. Enable them in your browser settings to turn this on."
+    "permissionDenied": "Notifications are blocked for this site. Enable them in your browser settings to turn this on.",
+    "notConfigured": "Notifications aren't configured on this deployment yet. Contact the app admin.",
+    "enableFailed": "Couldn't enable notifications. Try again, or check that notifications aren't blocked for this site.",
+    "disableFailed": "Couldn't disable notifications. Try again."
   },
   "toast": {
     "lineupSaved": "Batting order saved",
