@@ -78,5 +78,5 @@ export async function createEventAction(locale: string, teamId: string, formData
     }
   }
 
-  redirect(`/${locale}/teams/${teamId}/events/${event.id}`);
+  redirect(`/${locale}/teams/${teamId}/events/${event.id}?toast=toast.eventCreated`);
 }

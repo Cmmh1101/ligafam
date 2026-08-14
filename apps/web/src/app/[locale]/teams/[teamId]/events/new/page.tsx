@@ -1,6 +1,7 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SubmitButton } from "@/components/submit-button";
 import { createEventAction } from "./actions";
 
 export default async function NewEventPage({ params }: { params: Promise<{ teamId: string }> }) {
@@ -117,9 +118,11 @@ export default async function NewEventPage({ params }: { params: Promise<{ teamI
           />
         </div>
 
-        <button type="submit" className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white">
-          {t("events.createEvent")}
-        </button>
+        <SubmitButton
+          label={t("events.createEvent")}
+          pendingLabel={t("common.saving")}
+          className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white"
+        />
       </form>
     </>
   );

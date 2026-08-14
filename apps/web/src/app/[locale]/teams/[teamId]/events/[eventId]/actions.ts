@@ -45,7 +45,7 @@ export async function updateEventAction(locale: string, teamId: string, eventId:
     .eq("id", eventId)
     .eq("team_id", teamId);
 
-  redirect(`/${locale}/teams/${teamId}/events/${eventId}`);
+  redirect(`/${locale}/teams/${teamId}/events/${eventId}?toast=toast.eventUpdated`);
 }
 
 // Cascades: event_rsvps, snack_assignments, and the games row (which
@@ -72,7 +72,7 @@ export async function deleteEventAction(locale: string, teamId: string, eventId:
   // needed, a non-admin's delete is simply rejected by Postgres.
   await supabase.from("events").delete().eq("id", eventId).eq("team_id", teamId);
 
-  redirect(`/${locale}/teams/${teamId}/events`);
+  redirect(`/${locale}/teams/${teamId}/events?toast=toast.eventDeleted`);
 }
 
 // Called client-side (not awaited) right after start_game succeeds, from

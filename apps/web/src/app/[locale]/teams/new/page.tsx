@@ -1,6 +1,7 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SubmitButton } from "@/components/submit-button";
 import { createTeamAction } from "./actions";
 
 export default async function NewTeamPage({
@@ -58,9 +59,11 @@ export default async function NewTeamPage({
           />
         </div>
 
-        <button type="submit" className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white">
-          {t("common.createTeam")}
-        </button>
+        <SubmitButton
+          label={t("common.createTeam")}
+          pendingLabel={t("common.saving")}
+          className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white"
+        />
       </form>
     </main>
   );

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { ActionButton } from "@/components/action-button";
+import { InviteAdminForm } from "@/components/teams/invite-admin-form";
 import { approveRequestAction, rejectRequestAction, removeAdminAction } from "./actions";
 import { createAdminInviteAction, revokeAdminInviteAction } from "./admin-invite/actions";
 
@@ -201,22 +203,18 @@ export default async function TeamPage({
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <form action={approveWithId}>
-                        <button
-                          type="submit"
-                          className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white"
-                        >
-                          {t("common.approve")}
-                        </button>
-                      </form>
-                      <form action={rejectWithId}>
-                        <button
-                          type="submit"
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
-                        >
-                          {t("common.reject")}
-                        </button>
-                      </form>
+                      <ActionButton
+                        action={approveWithId}
+                        label={t("common.approve")}
+                        successToastKey="toast.requestApproved"
+                        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+                      />
+                      <ActionButton
+                        action={rejectWithId}
+                        label={t("common.reject")}
+                        successToastKey="toast.requestRejected"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+                      />
                     </div>
                   </li>
                 );
@@ -230,18 +228,7 @@ export default async function TeamPage({
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-medium text-slate-500">{t("team.inviteAdmin")}</h2>
 
-          <form action={createInvite} className="flex flex-col gap-2">
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder={t("team.inviteAdminEmailLabel")}
-              className="rounded-lg border border-slate-300 px-4 py-3"
-            />
-            <button type="submit" className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white">
-              {t("team.sendInvite")}
-            </button>
-          </form>
+          <InviteAdminForm action={createInvite} />
 
           {adminInvites.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -268,14 +255,12 @@ export default async function TeamPage({
                             {origin}/{locale}/admin-invite/{invite.token}
                           </p>
                           <p className="text-xs text-slate-500">{t("team.inviteLinkCreated")}</p>
-                          <form action={revokeWithId}>
-                            <button
-                              type="submit"
-                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
-                            >
-                              {t("team.revoke")}
-                            </button>
-                          </form>
+                          <ActionButton
+                            action={revokeWithId}
+                            label={t("team.revoke")}
+                            successToastKey="toast.adminInviteRevoked"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+                          />
                         </>
                       )}
                     </li>
@@ -308,6 +293,7 @@ export default async function TeamPage({
                     <ConfirmDeleteButton
                       action={removeWithId}
                       label={t("team.removeAdmin")}
+                      successToastKey="toast.adminRemoved"
                       className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
                     />
                   )}

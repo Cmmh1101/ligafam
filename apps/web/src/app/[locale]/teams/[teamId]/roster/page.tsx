@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { AddPlayerForm } from "@/components/teams/add-player-form";
 import { addPlayerAction, toggleSelfLinkAction, removePlayerAction } from "./actions";
 
 export default async function RosterPage({ params }: { params: Promise<{ teamId: string }> }) {
@@ -101,6 +102,7 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
                   <ConfirmDeleteButton
                     action={removeForPlayer}
                     label={t("common.delete")}
+                    successToastKey="toast.playerRemoved"
                     className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
                   />
                 </div>
@@ -110,34 +112,7 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
         </ul>
       )}
 
-      <form action={addPlayer} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4">
-        <p className="text-sm font-medium text-slate-700">{t("team.addPlayer")}</p>
-        <div className="flex gap-2">
-          <input
-            name="firstName"
-            type="text"
-            required
-            placeholder={t("team.firstName")}
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <input
-            name="lastName"
-            type="text"
-            required
-            placeholder={t("team.lastName")}
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
-          />
-        </div>
-        <input
-          name="jerseyNumber"
-          type="text"
-          placeholder={t("team.jerseyNumber")}
-          className="rounded-lg border border-slate-300 px-3 py-2"
-        />
-        <button type="submit" className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white">
-          {t("team.addPlayer")}
-        </button>
-      </form>
+      <AddPlayerForm action={addPlayer} />
     </>
   );
 }

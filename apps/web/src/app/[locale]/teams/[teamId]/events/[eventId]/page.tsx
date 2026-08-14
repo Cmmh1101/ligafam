@@ -7,6 +7,8 @@ import { GameScorePanel } from "@/components/games/game-score-panel";
 import { LineupSetup } from "@/components/games/lineup-setup";
 import { EventTabs } from "@/components/events/event-tabs";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { ActionButton } from "@/components/action-button";
+import { ClaimSnackForm } from "@/components/events/claim-snack-form";
 import { claimSnackAction, deleteSnackAction, deleteEventAction } from "./actions";
 
 type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
@@ -270,14 +272,13 @@ export default async function EventDetailPage({
                   </span>
                 </div>
                 {snack.canDelete && (
-                  <form action={deleteThisSnack}>
-                    <button
-                      type="submit"
-                      className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
-                    >
-                      {t("common.delete")}
-                    </button>
-                  </form>
+                  <ActionButton
+                    action={deleteThisSnack}
+                    label={t("common.delete")}
+                    pendingLabel={t("common.deleting")}
+                    successToastKey="toast.snackRemoved"
+                    className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+                  />
                 )}
               </li>
             );
@@ -285,20 +286,7 @@ export default async function EventDetailPage({
         </ul>
       )}
 
-      {(isApprovedAdmin || isApprovedFamily) && (
-        <form action={claimSnack} className="flex gap-2">
-          <input
-            name="item"
-            type="text"
-            required
-            placeholder={t("snacks.itemPlaceholder")}
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
-            {t("snacks.claim")}
-          </button>
-        </form>
-      )}
+      {(isApprovedAdmin || isApprovedFamily) && <ClaimSnackForm action={claimSnack} />}
     </div>
   );
 

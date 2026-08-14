@@ -1,7 +1,11 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { OfflineBanner } from "@/components/offline-banner";
+import { ToastProvider } from "@/components/toast/toast-context";
+import { ToastContainer } from "@/components/toast/toast-container";
+import { ToastFromSearchParam } from "@/components/toast/toast-from-search-param";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -38,8 +42,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale}>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <OfflineBanner />
-          {children}
+          <ToastProvider>
+            <OfflineBanner />
+            {children}
+            <ToastContainer />
+            <Suspense fallback={null}>
+              <ToastFromSearchParam />
+            </Suspense>
+          </ToastProvider>
         </NextIntlClientProvider>
       </body>
     </html>

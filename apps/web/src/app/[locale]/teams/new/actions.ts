@@ -23,5 +23,5 @@ export async function createTeamAction(locale: string, formData: FormData) {
     redirect(`/${locale}/teams/new?error=${rpcErrorKey(error?.message)}`);
   }
 
-  redirect(`/${locale}/teams/${data.id}`);
+  redirect(`/${locale}/teams/${data.id}?toast=toast.teamCreated`);
 }

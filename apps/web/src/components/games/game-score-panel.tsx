@@ -8,6 +8,7 @@ import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
 import { BaseDiamond } from "@/components/games/base-diamond";
 import { notifyGameStartedAction } from "@/app/[locale]/teams/[teamId]/events/[eventId]/actions";
 import { queueAction, flushScoreOutbox, pendingScoreCount, type OutboxAction } from "@/lib/offline/db";
+import { useToast } from "@/components/toast/toast-context";
 import {
   applyCountEvent,
   applyRunEvent,
@@ -94,6 +95,7 @@ export function GameScorePanel({
   initialOpponentLineup: OpponentBatter[];
 }) {
   const t = useTranslations();
+  const { addToast } = useToast();
   const supabase = createClient();
 
   const [game, setGame] = useState<Game | null>(initialGame);
@@ -262,6 +264,7 @@ export function GameScorePanel({
     if (data) {
       setGame(data as Game);
       notifyGameStartedAction(teamId, eventId, locale).catch(() => {});
+      addToast(t("toast.gameStarted"), "success");
     }
   }
 
@@ -429,7 +432,11 @@ export function GameScorePanel({
     setError(null);
     const { error: finalizeError } = await supabase.rpc("finalize_game", { p_game_id: game.id });
     setLoading(false);
-    if (finalizeError) setError(t(rpcErrorKey(finalizeError.message)));
+    if (finalizeError) {
+      setError(t(rpcErrorKey(finalizeError.message)));
+    } else {
+      addToast(t("toast.gameFinalized"), "success");
+    }
   }
 
   async function setHomeOrAway(value: "home" | "away") {
@@ -525,7 +532,7 @@ export function GameScorePanel({
             onClick={startGame}
             className="rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
           >
-            {t("game.startGame")}
+            {loading ? t("common.starting") : t("game.startGame")}
           </button>
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -795,7 +802,7 @@ export function GameScorePanel({
             title={pendingCount > 0 ? t("game.finalizeDisabledPendingSync") : undefined}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {t("game.finalizeGame")}
+            {loading ? t("common.finalizing") : t("game.finalizeGame")}
           </button>
         </div>
       )}

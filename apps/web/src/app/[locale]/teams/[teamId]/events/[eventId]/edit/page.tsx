@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { toLocalInputValue } from "@/lib/datetime";
+import { SubmitButton } from "@/components/submit-button";
 import { updateEventAction } from "../actions";
 
 export default async function EditEventPage({
@@ -147,9 +148,11 @@ export default async function EditEventPage({
           />
         </div>
 
-        <button type="submit" className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white">
-          {t("common.save")}
-        </button>
+        <SubmitButton
+          label={t("common.save")}
+          pendingLabel={t("common.saving")}
+          className="rounded-lg bg-slate-900 px-4 py-3 font-medium text-white"
+        />
       </form>
     </>
   );

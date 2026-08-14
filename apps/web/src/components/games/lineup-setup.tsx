@@ -5,6 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
+import { useToast } from "@/components/toast/toast-context";
 
 type RosterPlayer = {
   id: string;
@@ -138,6 +139,7 @@ export function LineupSetup({
 }) {
   const t = useTranslations();
   const supabase = createClient();
+  const { addToast } = useToast();
 
   // The server-rendered `initialGame` reflects page-load time -- if the
   // admin starts the game (on the Marcador tab) in the same session
@@ -208,7 +210,11 @@ export function LineupSetup({
       p_player_ids: ourLineup
     });
     setLoading(false);
-    if (lineupError) setError(t(rpcErrorKey(lineupError.message)));
+    if (lineupError) {
+      setError(t(rpcErrorKey(lineupError.message)));
+    } else {
+      addToast(t("toast.lineupSaved"), "success");
+    }
   }
 
   async function selectOurPitcher(playerId: string) {
@@ -247,7 +253,11 @@ export function LineupSetup({
       }))
     });
     setLoading(false);
-    if (lineupError) setError(t(rpcErrorKey(lineupError.message)));
+    if (lineupError) {
+      setError(t(rpcErrorKey(lineupError.message)));
+    } else {
+      addToast(t("toast.opponentLineupSaved"), "success");
+    }
   }
 
   async function saveOpponentPitcher() {
@@ -358,7 +368,7 @@ export function LineupSetup({
           onClick={saveOurLineup}
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          {t("game.saveLineup")}
+          {loading ? t("common.saving") : t("game.saveLineup")}
         </button>
       </div>
 
@@ -455,7 +465,7 @@ export function LineupSetup({
           onClick={saveOpponentLineup}
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          {t("game.saveOpponentLineup")}
+          {loading ? t("common.saving") : t("game.saveOpponentLineup")}
         </button>
       </div>
 
