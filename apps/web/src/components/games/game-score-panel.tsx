@@ -619,6 +619,8 @@ export function GameScorePanel({
               runnerOnSecond={game.runner_on_second}
               runnerOnThird={game.runner_on_third}
               onToggleBase={isApprovedAdmin ? setBaseRunner : undefined}
+              battingName={battingDisplay}
+              pitchingName={pitchingDisplay}
             />
           ) : (
             <span className="text-slate-300">–</span>
@@ -649,21 +651,9 @@ export function GameScorePanel({
             <span>
               {t("game.count")}: {game.balls}-{game.strikes}
             </span>
-          </div>
-        )}
-
-        {(battingDisplay || pitchingDisplay) && (
-          <div className="flex flex-col gap-1 text-base text-slate-700">
-            {battingDisplay && (
+            {pitchCount !== null && (
               <span>
-                {t("game.batting")}: {battingDisplay}
-              </span>
-            )}
-            {pitchingDisplay && (
-              <span>
-                {t("game.pitching")}: {pitchingDisplay}
-                {pitchCount !== null &&
-                  ` | ${t("game.pitchCountAbbrev")}: ${String(pitchCount).padStart(2, "0")}`}
+                {t("game.pitchCountAbbrev")}: {String(pitchCount).padStart(2, "0")}
               </span>
             )}
           </div>
