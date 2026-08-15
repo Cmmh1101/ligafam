@@ -20,6 +20,7 @@
     "offlineBanner": "Sin conexión — mostrando la última información guardada"
   },
   "auth": {
+    "tagline": "Sigue los partidos de tu equipo en vivo, gestiona el roster y no te pierdas ninguna novedad.",
     "signIn": "Iniciar sesión",
     "signUp": "Crear cuenta",
     "emailAddress": "Correo electrónico",

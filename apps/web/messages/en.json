@@ -20,6 +20,7 @@
     "offlineBanner": "Offline — showing last synced data"
   },
   "auth": {
+    "tagline": "Follow your team's games live, manage the roster, and never miss an update.",
     "signIn": "Sign in",
     "signUp": "Create account",
     "emailAddress": "Email address",
