@@ -63,6 +63,13 @@
     "ageGroup": "Age group",
     "ageGroupHint": "Optional, e.g. 10U",
     "createTeamTitle": "Create a new team",
+    "visibility": {
+      "public": "Public",
+      "private": "Private"
+    },
+    "fields": {
+      "visibility": "Visibility"
+    },
     "inviteCode": "Invite code",
     "inviteCodeHint": "Share this code with family and fans so they can join",
     "enterInviteCode": "Invite code",
@@ -241,7 +248,10 @@
     "permissionDenied": "Notifications are blocked for this site. Enable them in your browser settings to turn this on.",
     "notConfigured": "Notifications aren't configured on this deployment yet. Contact the app admin.",
     "enableFailed": "Couldn't enable notifications. Try again, or check that notifications aren't blocked for this site.",
-    "disableFailed": "Couldn't disable notifications. Try again."
+    "disableFailed": "Couldn't disable notifications. Try again.",
+    "nudgeText": "Turn on notifications to get live game updates and reminders.",
+    "nudgeLink": "Go to your profile",
+    "nudgeDismiss": "Dismiss"
   },
   "toast": {
     "lineupSaved": "Batting order saved",

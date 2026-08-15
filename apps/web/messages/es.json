@@ -63,6 +63,13 @@
     "ageGroup": "Categoría de edad",
     "ageGroupHint": "Opcional, ej. 10U",
     "createTeamTitle": "Crear un nuevo equipo",
+    "visibility": {
+      "public": "Público",
+      "private": "Privado"
+    },
+    "fields": {
+      "visibility": "Visibilidad"
+    },
     "inviteCode": "Código de invitación",
     "inviteCodeHint": "Comparte este código con familias y aficionados para que se unan",
     "enterInviteCode": "Código de invitación",
@@ -241,7 +248,10 @@
     "permissionDenied": "Las notificaciones están bloqueadas para este sitio. Actívalas en la configuración de tu navegador.",
     "notConfigured": "Las notificaciones aún no están configuradas en este sitio. Contacta al administrador de la app.",
     "enableFailed": "No se pudieron activar las notificaciones. Intenta de nuevo, o revisa que no estén bloqueadas para este sitio.",
-    "disableFailed": "No se pudieron desactivar las notificaciones. Intenta de nuevo."
+    "disableFailed": "No se pudieron desactivar las notificaciones. Intenta de nuevo.",
+    "nudgeText": "Activa las notificaciones para recibir actualizaciones en vivo y recordatorios.",
+    "nudgeLink": "Ir a tu perfil",
+    "nudgeDismiss": "Cerrar"
   },
   "toast": {
     "lineupSaved": "Orden al bate guardado",

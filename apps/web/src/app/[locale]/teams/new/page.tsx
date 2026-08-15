@@ -59,6 +59,21 @@ export default async function NewTeamPage({
           />
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700" htmlFor="visibility">
+            {t("team.fields.visibility")}
+          </label>
+          <select
+            id="visibility"
+            name="visibility"
+            defaultValue="public"
+            className="rounded-lg border border-slate-300 px-4 py-3"
+          >
+            <option value="public">{t("team.visibility.public")}</option>
+            <option value="private">{t("team.visibility.private")}</option>
+          </select>
+        </div>
+
         <SubmitButton
           label={t("common.createTeam")}
           pendingLabel={t("common.saving")}

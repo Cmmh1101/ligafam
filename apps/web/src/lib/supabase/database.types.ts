@@ -12,6 +12,7 @@ export type RsvpStatus = "yes" | "no" | "maybe" | "no_response";
 export type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
 export type AdminInviteStatus = "pending" | "accepted" | "revoked";
 export type EventVisibility = "public" | "private";
+export type TeamVisibility = "public" | "private";
 
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
@@ -51,6 +52,7 @@ export type Database = {
           invite_code: string;
           created_by: string | null;
           created_at: string;
+          visibility: TeamVisibility;
         },
         {
           id?: string;
@@ -61,6 +63,7 @@ export type Database = {
           invite_code?: string;
           created_by?: string | null;
           created_at?: string;
+          visibility?: TeamVisibility;
         }
       >;
       seasons: TableDef<
@@ -444,7 +447,12 @@ export type Database = {
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };
       create_team: {
-        Args: { p_name: string; p_sport?: string; p_age_group?: string | null };
+        Args: {
+          p_name: string;
+          p_sport?: string;
+          p_age_group?: string | null;
+          p_visibility?: TeamVisibility;
+        };
         Returns: Database["public"]["Tables"]["teams"]["Row"];
       };
       get_joinable_team: {

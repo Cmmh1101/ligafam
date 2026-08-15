@@ -7,6 +7,8 @@ import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
 export async function createTeamAction(locale: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const ageGroup = String(formData.get("ageGroup") ?? "").trim();
+  const rawVisibility = String(formData.get("visibility") ?? "public");
+  const visibility = rawVisibility === "private" ? "private" : "public";
 
   if (!name) {
     redirect(`/${locale}/teams/new?error=errors.generic`);
@@ -15,7 +17,8 @@ export async function createTeamAction(locale: string, formData: FormData) {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_team", {
     p_name: name,
-    p_age_group: ageGroup || null
+    p_age_group: ageGroup || null,
+    p_visibility: visibility
   });
 
   if (error || !data) {
