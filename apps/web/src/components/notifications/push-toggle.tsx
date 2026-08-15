@@ -86,7 +86,7 @@ export function PushToggle() {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <h2 className="text-sm font-medium text-slate-700">{t("title")}</h2>
           <p className="text-xs text-slate-500">{t("description")}</p>
         </div>
@@ -99,7 +99,7 @@ export function PushToggle() {
             aria-label={status === "subscribed" ? t("disable") : t("enable")}
             disabled={loading}
             onClick={status === "subscribed" ? disable : enable}
-            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+            className={`relative h-7 w-12 shrink-0 appearance-none rounded-full border-0 p-0 transition-colors disabled:opacity-50 ${
               status === "subscribed" ? "bg-slate-900" : "bg-slate-300"
             }`}
           >

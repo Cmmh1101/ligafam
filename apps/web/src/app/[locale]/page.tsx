@@ -164,12 +164,14 @@ export default async function HomePage() {
           </div>
         </div>
       ) : (
-        <a
-          href={`/${locale}/sign-in`}
-          className="rounded-lg bg-slate-900 px-4 py-3 text-center font-medium text-white"
-        >
-          {t("auth.signIn")}
-        </a>
+        <div className="flex flex-1 items-center justify-center">
+          <a
+            href={`/${locale}/sign-in`}
+            className="w-full rounded-lg bg-slate-900 px-4 py-3 text-center font-medium text-white"
+          >
+            {t("auth.signIn")}
+          </a>
+        </div>
       )}
     </main>
   );
