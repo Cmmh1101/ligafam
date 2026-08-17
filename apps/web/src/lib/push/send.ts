@@ -39,6 +39,10 @@ const TEMPLATES: Record<
     locale === "en"
       ? { title: "Game is live!", body: vars.opponent ? `vs. ${vars.opponent} -- follow along now` : "Follow along now" }
       : { title: "¡El partido está en vivo!", body: vars.opponent ? `vs. ${vars.opponent} -- síguelo ahora` : "Síguelo ahora" },
+  game_final: (locale, vars) =>
+    locale === "en"
+      ? { title: "Final score", body: `FINAL | ${vars.teamName} (${vars.ourScore}) - (${vars.opponentScore}) ${vars.opponent}` }
+      : { title: "Resultado final", body: `FINAL | ${vars.teamName} (${vars.ourScore}) - (${vars.opponentScore}) ${vars.opponent}` },
   rsvp_reminder: (locale) =>
     locale === "en"
       ? { title: "Reminder: confirm attendance", body: "There's a game or practice tomorrow -- let your team know if you're coming" }
@@ -52,7 +56,7 @@ const TEMPLATES: Record<
 export async function sendPushToUsers(
   userIds: string[],
   kind: NotificationType,
-  vars: { opponent?: string; url: string }
+  vars: { opponent?: string; teamName?: string; ourScore?: string; opponentScore?: string; url: string }
 ): Promise<void> {
   if (userIds.length === 0) return;
 
@@ -69,7 +73,12 @@ export async function sendPushToUsers(
   const results = await Promise.allSettled(
     (subscriptions ?? []).map(async (sub) => {
       const locale = localeByUser.get(sub.user_id) ?? "es";
-      const { title, body } = TEMPLATES[kind](locale, { opponent: vars.opponent ?? "" });
+      const { title, body } = TEMPLATES[kind](locale, {
+        opponent: vars.opponent ?? "",
+        teamName: vars.teamName ?? "",
+        ourScore: vars.ourScore ?? "",
+        opponentScore: vars.opponentScore ?? ""
+      });
       const payload = JSON.stringify({ title, body, url: vars.url });
 
       try {

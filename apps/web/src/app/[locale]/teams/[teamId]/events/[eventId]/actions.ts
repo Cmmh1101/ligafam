@@ -123,6 +123,53 @@ export async function notifyGameStartedAction(teamId: string, eventId: string, l
   }
 }
 
+// Twin of notifyGameStartedAction above -- same membership/RLS reliance,
+// same claim-before-send safety against a double-fire. Additionally reads
+// the team's own name and final scores, neither of which the game-started
+// trigger needs.
+export async function notifyGameFinalizedAction(teamId: string, eventId: string, locale: string) {
+  const supabase = await createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, opponent_name, visibility")
+    .eq("id", eventId)
+    .eq("team_id", teamId)
+    .maybeSingle();
+  if (!event) return;
+
+  const { data: game } = await supabase
+    .from("games")
+    .select("status, our_score, opponent_score")
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!game || game.status !== "final") return;
+
+  const { data: team } = await supabase.from("teams").select("name").eq("id", teamId).maybeSingle();
+  if (!team) return;
+
+  try {
+    const recipientIds = await approvedTeamMemberIds(teamId, {
+      excludeUserId: user.id,
+      ...(event.visibility === "private" ? { roles: ["admin", "family"] } : {})
+    });
+    const claimed = await claimRecipients(eventId, "game_final", recipientIds);
+    await sendPushToUsers(claimed, "game_final", {
+      teamName: team.name,
+      opponent: event.opponent_name ?? (locale === "en" ? "Opponent" : "Rival"),
+      ourScore: String(game.our_score),
+      opponentScore: String(game.opponent_score),
+      url: `/${locale}/teams/${teamId}/events/${eventId}`
+    });
+  } catch (err) {
+    console.error("[notifyGameFinalizedAction] failed", err);
+  }
+}
+
 export async function claimSnackAction(
   locale: string,
   teamId: string,

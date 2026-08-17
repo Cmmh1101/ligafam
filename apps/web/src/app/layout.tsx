@@ -3,6 +3,7 @@ import { getMessages, getLocale } from "next-intl/server";
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { OfflineBanner } from "@/components/offline-banner";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { NotificationNudge } from "@/components/notifications/notification-nudge";
 import { ToastProvider } from "@/components/toast/toast-context";
 import { ToastContainer } from "@/components/toast/toast-container";
@@ -53,6 +54,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Suspense>
           </ToastProvider>
         </NextIntlClientProvider>
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
       </body>
     </html>
   );

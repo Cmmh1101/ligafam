@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
-export type NotificationType = "game_scheduled" | "game_live" | "rsvp_reminder" | "snack_reminder";
+export type NotificationType = "game_scheduled" | "game_live" | "game_final" | "rsvp_reminder" | "snack_reminder";
 
 // Claim-before-send: notification_log's unique(user_id, event_id,
 // notification_type) constraint is the dedup lock. Only recipients whose
