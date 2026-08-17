@@ -50,6 +50,75 @@ export default async function TeamPage({
   const isApprovedAdmin = membership?.role === "admin" && membership?.status === "approved";
   const isCreator = team.created_by === user.id;
 
+  type BattingStatRow = {
+    at_bats: number;
+    hits: number;
+    doubles: number;
+    triples: number;
+    home_runs: number;
+    walks: number;
+    strikeouts: number;
+    runs: number;
+    rbi: number;
+    stolen_bases: number;
+    players: { id: string; first_name: string; last_name: string; jersey_number: string | null } | null;
+  };
+  type PitchingStatRow = {
+    outs_recorded: number;
+    strikeouts: number;
+    walks_issued: number;
+    hits_allowed: number;
+    runs_allowed: number;
+    players: { id: string; first_name: string; last_name: string; jersey_number: string | null } | null;
+  };
+
+  let battingStats: BattingStatRow[] = [];
+  let pitchingStats: PitchingStatRow[] = [];
+
+  if (isApprovedMember) {
+    const { data: activeSeason } = await supabase
+      .from("seasons")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (activeSeason) {
+      const [{ data: battingRows }, { data: pitchingRows }] = await Promise.all([
+        supabase
+          .from("player_season_batting_stats")
+          .select(
+            "at_bats, hits, doubles, triples, home_runs, walks, strikeouts, runs, rbi, stolen_bases, players(id, first_name, last_name, jersey_number)"
+          )
+          .eq("season_id", activeSeason.id)
+          .order("hits", { ascending: false }),
+        supabase
+          .from("player_season_pitching_stats")
+          .select(
+            "outs_recorded, strikeouts, walks_issued, hits_allowed, runs_allowed, players(id, first_name, last_name, jersey_number)"
+          )
+          .eq("season_id", activeSeason.id)
+          .order("strikeouts", { ascending: false })
+      ]);
+      battingStats = (battingRows ?? []) as unknown as BattingStatRow[];
+      pitchingStats = (pitchingRows ?? []) as unknown as PitchingStatRow[];
+    }
+  }
+
+  function statPlayerName(player: { first_name: string; last_name: string; jersey_number: string | null } | null) {
+    if (!player) return "?";
+    return `${player.first_name} ${player.last_name}${player.jersey_number ? ` #${player.jersey_number}` : ""}`;
+  }
+
+  function formatSeasonAvg(hits: number, atBats: number) {
+    if (atBats === 0) return "-";
+    return (hits / atBats).toFixed(3).replace(/^0/, "");
+  }
+
+  function formatSeasonIp(outs: number) {
+    return `${Math.floor(outs / 3)}.${outs % 3}`;
+  }
+
   let pendingRequests: {
     id: string;
     role: string;
@@ -173,6 +242,98 @@ export default async function TeamPage({
         <p className="font-mono text-lg text-slate-900">{team.invite_code}</p>
         <p className="text-xs text-slate-500">{t("team.inviteCodeHint")}</p>
       </div>
+
+      {isApprovedMember && (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-sm font-medium text-slate-500">{t("team.stats.title")}</h2>
+
+          {battingStats.length === 0 && pitchingStats.length === 0 ? (
+            <p className="text-slate-600">{t("team.stats.noStatsYet")}</p>
+          ) : (
+            <>
+              {battingStats.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium text-slate-500">{t("game.stats.battingTitle")}</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="text-xs text-slate-500">
+                          <th className="pr-2 font-medium">{t("game.stats.player")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.abAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.hAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">2B</th>
+                          <th className="px-1.5 text-center font-medium">3B</th>
+                          <th className="px-1.5 text-center font-medium">HR</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.bbAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.kAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.rAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.rbiAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.sbAbbrev")}</th>
+                          <th className="pl-1.5 text-center font-medium">{t("game.stats.avgAbbrev")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {battingStats.map((row, i) => (
+                          <tr key={row.players?.id ?? i} className="border-t border-slate-100">
+                            <td className="py-1.5 pr-2 text-slate-900">{statPlayerName(row.players)}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.at_bats}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.hits}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.doubles}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.triples}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.home_runs}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.walks}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.strikeouts}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.runs}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.rbi}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.stolen_bases}</td>
+                            <td className="pl-1.5 text-center text-slate-700">
+                              {formatSeasonAvg(row.hits, row.at_bats)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {pitchingStats.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium text-slate-500">{t("game.stats.pitchingTitle")}</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="text-xs text-slate-500">
+                          <th className="pr-2 font-medium">{t("game.stats.player")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.ipAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.kAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.bbAbbrev")}</th>
+                          <th className="px-1.5 text-center font-medium">{t("game.stats.hAbbrev")}</th>
+                          <th className="pl-1.5 text-center font-medium">{t("game.stats.rAbbrev")}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pitchingStats.map((row, i) => (
+                          <tr key={row.players?.id ?? i} className="border-t border-slate-100">
+                            <td className="py-1.5 pr-2 text-slate-900">{statPlayerName(row.players)}</td>
+                            <td className="px-1.5 text-center text-slate-700">
+                              {formatSeasonIp(row.outs_recorded)}
+                            </td>
+                            <td className="px-1.5 text-center text-slate-700">{row.strikeouts}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.walks_issued}</td>
+                            <td className="px-1.5 text-center text-slate-700">{row.hits_allowed}</td>
+                            <td className="pl-1.5 text-center text-slate-700">{row.runs_allowed}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {isApprovedAdmin && (
         <div className="flex flex-col gap-3">

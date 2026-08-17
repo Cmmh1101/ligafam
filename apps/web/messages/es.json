@@ -110,7 +110,11 @@
     "revoke": "Revocar",
     "currentAdmins": "Administradores actuales",
     "removeAdmin": "Quitar administrador",
-    "you": "tú"
+    "you": "tú",
+    "stats": {
+      "title": "Estadísticas del equipo",
+      "noStatsYet": "Todavía no hay estadísticas esta temporada"
+    }
   },
   "profile": {
     "title": "Mi perfil",
@@ -270,6 +274,22 @@
         "steal": "Base robada",
         "other": "Otro"
       }
+    },
+    "statsTab": "Estadísticas",
+    "stats": {
+      "battingTitle": "Bateo",
+      "pitchingTitle": "Pitcheo",
+      "player": "Jugador",
+      "abAbbrev": "VB",
+      "hAbbrev": "H",
+      "bbAbbrev": "BB",
+      "kAbbrev": "K",
+      "rAbbrev": "C",
+      "rbiAbbrev": "CI",
+      "sbAbbrev": "BR",
+      "avgAbbrev": "AVG",
+      "ipAbbrev": "IL",
+      "noDataYet": "Todavía no hay estadísticas de este partido"
     }
   },
   "notifications": {

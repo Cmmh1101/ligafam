@@ -5,6 +5,7 @@ import { formatEventDateTime } from "@/lib/datetime";
 import { RsvpToggle, RsvpStatusBadge } from "@/components/events/rsvp-toggle";
 import { GameScorePanel } from "@/components/games/game-score-panel";
 import { LineupSetup } from "@/components/games/lineup-setup";
+import { GameStatsView } from "@/components/games/game-stats-view";
 import { EventTabs } from "@/components/events/event-tabs";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { ActionButton } from "@/components/action-button";
@@ -347,6 +348,7 @@ export default async function EventDetailPage({
               )}
             </>
           }
+          statsContent={<GameStatsView eventId={eventId} gameId={game?.id ?? null} roster={gameRoster} />}
           snacksContent={snacksSection}
         />
       ) : (

@@ -3,15 +3,17 @@
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
-type Tab = "board" | "roster" | "snacks";
+type Tab = "board" | "roster" | "stats" | "snacks";
 
 export function EventTabs({
   boardContent,
   rosterContent,
+  statsContent,
   snacksContent
 }: {
   boardContent: ReactNode;
   rosterContent: ReactNode;
+  statsContent: ReactNode;
   snacksContent: ReactNode;
 }) {
   const t = useTranslations();
@@ -20,6 +22,7 @@ export function EventTabs({
   const tabs: { key: Tab; label: string }[] = [
     { key: "board", label: t("game.boardTab") },
     { key: "roster", label: t("game.rosterTab") },
+    { key: "stats", label: t("game.statsTab") },
     { key: "snacks", label: t("game.snacksTab") }
   ];
 
@@ -46,6 +49,7 @@ export function EventTabs({
           switches tabs. */}
       <div className={tab === "board" ? "flex flex-col gap-6" : "hidden"}>{boardContent}</div>
       <div className={tab === "roster" ? "flex flex-col gap-6" : "hidden"}>{rosterContent}</div>
+      <div className={tab === "stats" ? "flex flex-col gap-6" : "hidden"}>{statsContent}</div>
       <div className={tab === "snacks" ? "flex flex-col gap-6" : "hidden"}>{snacksContent}</div>
     </div>
   );

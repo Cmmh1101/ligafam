@@ -110,7 +110,11 @@
     "revoke": "Revoke",
     "currentAdmins": "Current admins",
     "removeAdmin": "Remove admin",
-    "you": "you"
+    "you": "you",
+    "stats": {
+      "title": "Team stats",
+      "noStatsYet": "No stats yet this season"
+    }
   },
   "profile": {
     "title": "My profile",
@@ -270,6 +274,22 @@
         "steal": "Stolen base",
         "other": "Other"
       }
+    },
+    "statsTab": "Stats",
+    "stats": {
+      "battingTitle": "Batting",
+      "pitchingTitle": "Pitching",
+      "player": "Player",
+      "abAbbrev": "AB",
+      "hAbbrev": "H",
+      "bbAbbrev": "BB",
+      "kAbbrev": "K",
+      "rAbbrev": "R",
+      "rbiAbbrev": "RBI",
+      "sbAbbrev": "SB",
+      "avgAbbrev": "AVG",
+      "ipAbbrev": "IP",
+      "noDataYet": "No stats yet for this game"
     }
   },
   "notifications": {
