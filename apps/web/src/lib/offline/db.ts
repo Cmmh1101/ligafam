@@ -19,10 +19,25 @@ export type OutboxAction =
   | { kind: "snack_claim"; eventId: string; familyLinkId: string; item: string }
   | { kind: "score_count"; gameId: string; eventType: "ball" | "strike" | "out"; delta: 1 | -1 }
   | { kind: "score_run"; gameId: string; scoringTeam: "us" | "opponent"; runs: 1 | -1 }
-  | { kind: "score_base"; gameId: string; base: "first" | "second" | "third"; occupied: boolean }
+  | {
+      kind: "score_base";
+      gameId: string;
+      base: "first" | "second" | "third";
+      occupied: boolean;
+      playerId?: string | null;
+    }
   | { kind: "score_home_or_away"; gameId: string; value: "home" | "away" }
   | { kind: "score_advance_batter"; gameId: string }
-  | { kind: "score_advance_opponent_batter"; gameId: string };
+  | { kind: "score_advance_opponent_batter"; gameId: string }
+  | { kind: "score_hit"; gameId: string; hitType: "single" | "double" | "triple" | "home_run" }
+  | { kind: "score_set_batter"; gameId: string; playerId: string }
+  | {
+      kind: "score_move_runner";
+      gameId: string;
+      fromBase: "first" | "second" | "third";
+      toBase: "second" | "third" | "home" | "out";
+      reason: "hit" | "error" | "steal" | "other";
+    };
 
 interface OutboxRow {
   id?: number;

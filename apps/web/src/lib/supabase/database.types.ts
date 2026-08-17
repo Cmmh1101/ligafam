@@ -13,6 +13,8 @@ export type GameStatus = "scheduled" | "live" | "final" | "postponed" | "cancele
 export type AdminInviteStatus = "pending" | "accepted" | "revoked";
 export type EventVisibility = "public" | "private";
 export type TeamVisibility = "public" | "private";
+export type HitType = "single" | "double" | "triple" | "home_run";
+export type RunnerMoveReason = "hit" | "error" | "steal" | "other";
 
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
@@ -230,6 +232,9 @@ export type Database = {
           runner_on_first: boolean;
           runner_on_second: boolean;
           runner_on_third: boolean;
+          runner_on_first_player_id: string | null;
+          runner_on_second_player_id: string | null;
+          runner_on_third_player_id: string | null;
           started_at: string | null;
           ended_at: string | null;
         },
@@ -256,6 +261,9 @@ export type Database = {
           runner_on_first?: boolean;
           runner_on_second?: boolean;
           runner_on_third?: boolean;
+          runner_on_first_player_id?: string | null;
+          runner_on_second_player_id?: string | null;
+          runner_on_third_player_id?: string | null;
           started_at?: string | null;
           ended_at?: string | null;
         }
@@ -442,7 +450,28 @@ export type Database = {
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       set_base_runner: {
-        Args: { p_game_id: string; p_base: string; p_occupied: boolean };
+        Args: { p_game_id: string; p_base: string; p_occupied: boolean; p_player_id?: string | null };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      record_batter_hit: {
+        Args: { p_game_id: string; p_hit_type: HitType };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      set_current_batter: {
+        Args: { p_game_id: string; p_player_id: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      substitute_lineup_player: {
+        Args: { p_game_id: string; p_outgoing_player_id: string; p_incoming_player_id: string };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      move_base_runner: {
+        Args: {
+          p_game_id: string;
+          p_from_base: "first" | "second" | "third";
+          p_to_base: "second" | "third" | "home" | "out";
+          p_reason: RunnerMoveReason;
+        };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };

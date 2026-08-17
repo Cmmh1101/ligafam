@@ -238,6 +238,38 @@
       "first": "First base",
       "second": "Second base",
       "third": "Third base"
+    },
+    "hit": {
+      "single": "Single",
+      "double": "Double",
+      "triple": "Triple",
+      "home_run": "Home run"
+    },
+    "currentBatterPrompt": {
+      "title": "What happened?",
+      "replace": "Replace current hitter",
+      "resumeOrder": "Resume order from this hitter"
+    },
+    "selectReplacement": "Select a replacement",
+    "selectResumeBatter": "Select who's actually up",
+    "noReserveAvailable": "No reserve players available",
+    "substitutePlayer": "Substitute",
+    "moveRunner": {
+      "placeTitle": "Who's on base?",
+      "title": "Move this runner to...",
+      "reasonTitle": "Why?",
+      "destination": {
+        "second": "Second base",
+        "third": "Third base",
+        "home": "Home (scores)",
+        "out": "Out"
+      },
+      "reason": {
+        "hit": "Hit",
+        "error": "Error",
+        "steal": "Stolen base",
+        "other": "Other"
+      }
     }
   },
   "notifications": {
@@ -272,7 +304,8 @@
     "snackRemoved": "Removed",
     "profileUpdated": "Profile updated",
     "gameStarted": "Game started",
-    "gameFinalized": "Game finalized"
+    "gameFinalized": "Game finalized",
+    "playerSubstituted": "Player substituted"
   },
   "errors": {
     "notAuthenticated": "You need to sign in to continue",
@@ -295,6 +328,12 @@
     "adminNotFound": "Admin not found",
     "cannotRemoveSelf": "You can't remove yourself as admin",
     "fullNameRequired": "Full name is required",
-    "phoneAlreadyInUse": "This phone number is already registered to another account"
+    "phoneAlreadyInUse": "This phone number is already registered to another account",
+    "invalidHitType": "Invalid hit type",
+    "playerNotInLineup": "That player isn't in the lineup",
+    "playerAlreadyInLineup": "That player is already in the lineup",
+    "noRunnerOnBase": "There's no runner on that base",
+    "invalidBase": "Invalid base",
+    "invalidMoveReason": "Invalid reason"
   }
 }

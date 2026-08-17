@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
 import { BaseDiamond } from "@/components/games/base-diamond";
-import { notifyGameStartedAction } from "@/app/[locale]/teams/[teamId]/events/[eventId]/actions";
+import { notifyGameStartedAction, notifyGameFinalizedAction } from "@/app/[locale]/teams/[teamId]/events/[eventId]/actions";
 import { queueAction, flushScoreOutbox, pendingScoreCount, type OutboxAction } from "@/lib/offline/db";
 import { useToast } from "@/components/toast/toast-context";
 import {
@@ -15,7 +15,11 @@ import {
   applyBaseRunner,
   applyHomeOrAway,
   applyAdvanceBatter,
-  applyAdvanceOpponentBatter
+  applyAdvanceOpponentBatter,
+  applyBatterHit,
+  applySetCurrentBatter,
+  applyMoveBaseRunner,
+  type HitType
 } from "@/lib/scoring/engine";
 
 type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
@@ -42,6 +46,19 @@ type Game = {
   runner_on_first: boolean;
   runner_on_second: boolean;
   runner_on_third: boolean;
+  runner_on_first_player_id: string | null;
+  runner_on_second_player_id: string | null;
+  runner_on_third_player_id: string | null;
+};
+
+type BaseKey = "first" | "second" | "third";
+type MoveDestination = "second" | "third" | "home" | "out";
+type MoveReason = "hit" | "error" | "steal" | "other";
+
+const MOVE_DESTINATIONS: Record<BaseKey, MoveDestination[]> = {
+  first: ["second", "third", "home", "out"],
+  second: ["third", "home", "out"],
+  third: ["home", "out"]
 };
 
 type RosterPlayer = {
@@ -104,6 +121,22 @@ export function GameScorePanel({
   const [error, setError] = useState<string | null>(null);
   const [syncFailedCount, setSyncFailedCount] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // Base-diamond interaction: clicking an empty base (our half) opens a
+  // "place" picker; clicking an occupied base opens the "move this runner"
+  // menu (destination, then reason). Opponent's half bypasses this
+  // entirely -- see onBaseClick below.
+  const [baseAction, setBaseAction] = useState<
+    | { kind: "place"; base: BaseKey }
+    | { kind: "move-destination"; base: BaseKey }
+    | { kind: "move-reason"; base: BaseKey; destination: MoveDestination }
+    | null
+  >(null);
+
+  // Current-batter click: "choose" is the initial Replace/Resume-order
+  // prompt; "replace" opens a bench picker (substitute_lineup_player);
+  // "resume" opens a full-lineup picker (set_current_batter).
+  const [batterPrompt, setBatterPrompt] = useState<"choose" | "replace" | "resume" | null>(null);
 
   const opponentBatterIds = opponentLineup.map((o) => o.id);
 
@@ -185,7 +218,34 @@ export function GameScorePanel({
         const { error: rpcError } = await supabase.rpc("set_base_runner", {
           p_game_id: action.gameId,
           p_base: action.base,
-          p_occupied: action.occupied
+          p_occupied: action.occupied,
+          p_player_id: action.playerId ?? null
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_hit": {
+        const { error: rpcError } = await supabase.rpc("record_batter_hit", {
+          p_game_id: action.gameId,
+          p_hit_type: action.hitType
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_set_batter": {
+        const { error: rpcError } = await supabase.rpc("set_current_batter", {
+          p_game_id: action.gameId,
+          p_player_id: action.playerId
+        });
+        if (rpcError) throw rpcError;
+        return;
+      }
+      case "score_move_runner": {
+        const { error: rpcError } = await supabase.rpc("move_base_runner", {
+          p_game_id: action.gameId,
+          p_from_base: action.fromBase,
+          p_to_base: action.toBase,
+          p_reason: action.reason
         });
         if (rpcError) throw rpcError;
         return;
@@ -396,14 +456,14 @@ export function GameScorePanel({
     if (data) setGame(data as Game);
   }
 
-  async function setBaseRunner(base: "first" | "second" | "third", occupied: boolean) {
+  async function setBaseRunner(base: "first" | "second" | "third", occupied: boolean, playerId: string | null = null) {
     if (!game) return;
     setLoading(true);
     setError(null);
-    const offlineAction: OutboxAction = { kind: "score_base", gameId: game.id, base, occupied };
+    const offlineAction: OutboxAction = { kind: "score_base", gameId: game.id, base, occupied, playerId };
 
     if (!navigator.onLine) {
-      setGame({ ...game, ...applyBaseRunner(game, base, occupied) });
+      setGame({ ...game, ...applyBaseRunner(game, base, occupied, playerId) });
       await queueAction(offlineAction);
       setLoading(false);
       return;
@@ -412,18 +472,131 @@ export function GameScorePanel({
     const { error: baseError } = await supabase.rpc("set_base_runner", {
       p_game_id: game.id,
       p_base: base,
-      p_occupied: occupied
+      p_occupied: occupied,
+      p_player_id: playerId
     });
     setLoading(false);
 
     if (baseError) {
       if (looksOffline(baseError)) {
-        setGame({ ...game, ...applyBaseRunner(game, base, occupied) });
+        setGame({ ...game, ...applyBaseRunner(game, base, occupied, playerId) });
         await queueAction(offlineAction);
         return;
       }
       setError(t(rpcErrorKey(baseError.message)));
     }
+  }
+
+  async function recordHit(hitType: HitType) {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const offlineAction: OutboxAction = { kind: "score_hit", gameId: game.id, hitType };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyBatterHit(game, hitType, initialLineup, opponentBatterIds) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error: hitError } = await supabase.rpc("record_batter_hit", {
+      p_game_id: game.id,
+      p_hit_type: hitType
+    });
+    setLoading(false);
+
+    if (hitError) {
+      if (looksOffline(hitError)) {
+        setGame({ ...game, ...applyBatterHit(game, hitType, initialLineup, opponentBatterIds) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(hitError.message)));
+      return;
+    }
+    if (data) setGame(data as Game);
+  }
+
+  async function setCurrentBatter(playerId: string) {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const offlineAction: OutboxAction = { kind: "score_set_batter", gameId: game.id, playerId };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applySetCurrentBatter(game, playerId) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
+    const { error: batterError } = await supabase.rpc("set_current_batter", {
+      p_game_id: game.id,
+      p_player_id: playerId
+    });
+    setLoading(false);
+
+    if (batterError) {
+      if (looksOffline(batterError)) {
+        setGame({ ...game, ...applySetCurrentBatter(game, playerId) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(batterError.message)));
+    }
+  }
+
+  // Substitution is online-only (matches lineup-setup.tsx's existing
+  // no-offline behavior for lineup changes) -- no outbox queueing here.
+  async function substituteLineupPlayer(outgoingId: string, incomingId: string) {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const { error: subError } = await supabase.rpc("substitute_lineup_player", {
+      p_game_id: game.id,
+      p_outgoing_player_id: outgoingId,
+      p_incoming_player_id: incomingId
+    });
+    setLoading(false);
+    if (subError) {
+      setError(t(rpcErrorKey(subError.message)));
+      return;
+    }
+    addToast(t("toast.playerSubstituted"), "success");
+  }
+
+  async function moveBaseRunner(fromBase: BaseKey, toBase: MoveDestination, reason: MoveReason) {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const offlineAction: OutboxAction = { kind: "score_move_runner", gameId: game.id, fromBase, toBase, reason };
+
+    if (!navigator.onLine) {
+      setGame({ ...game, ...applyMoveBaseRunner(game, fromBase, toBase) });
+      await queueAction(offlineAction);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error: moveError } = await supabase.rpc("move_base_runner", {
+      p_game_id: game.id,
+      p_from_base: fromBase,
+      p_to_base: toBase,
+      p_reason: reason
+    });
+    setLoading(false);
+
+    if (moveError) {
+      if (looksOffline(moveError)) {
+        setGame({ ...game, ...applyMoveBaseRunner(game, fromBase, toBase) });
+        await queueAction(offlineAction);
+        return;
+      }
+      setError(t(rpcErrorKey(moveError.message)));
+      return;
+    }
+    if (data) setGame(data as Game);
   }
 
   async function finalizeGame() {
@@ -435,6 +608,7 @@ export function GameScorePanel({
     if (finalizeError) {
       setError(t(rpcErrorKey(finalizeError.message)));
     } else {
+      notifyGameFinalizedAction(teamId, eventId, locale).catch(() => {});
       addToast(t("toast.gameFinalized"), "success");
     }
   }
@@ -618,9 +792,27 @@ export function GameScorePanel({
               runnerOnFirst={game.runner_on_first}
               runnerOnSecond={game.runner_on_second}
               runnerOnThird={game.runner_on_third}
-              onToggleBase={isApprovedAdmin ? setBaseRunner : undefined}
+              runnerOnFirstName={playerName(game.runner_on_first_player_id)}
+              runnerOnSecondName={playerName(game.runner_on_second_player_id)}
+              runnerOnThirdName={playerName(game.runner_on_third_player_id)}
+              onBaseClick={
+                isApprovedAdmin
+                  ? (base, occupied) => {
+                      if (!isOurHalf) {
+                        setBaseRunner(base, !occupied);
+                        return;
+                      }
+                      setBaseAction(occupied ? { kind: "move-destination", base } : { kind: "place", base });
+                    }
+                  : undefined
+              }
               battingName={battingDisplay}
               pitchingName={pitchingDisplay}
+              onBattingNameClick={
+                isApprovedAdmin && isOurHalf && game.current_batter_player_id !== null
+                  ? () => setBatterPrompt("choose")
+                  : undefined
+              }
             />
           ) : (
             <span className="text-slate-300">–</span>
@@ -660,8 +852,181 @@ export function GameScorePanel({
         )}
       </div>
 
+      {isLive && isApprovedAdmin && baseAction && (
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+          {baseAction.kind === "place" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.moveRunner.placeTitle")}</p>
+              <div className="flex flex-wrap gap-2">
+                {initialLineup.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      setBaseRunner(baseAction.base, true, id);
+                      setBaseAction(null);
+                    }}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                  >
+                    {playerName(id)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {baseAction.kind === "move-destination" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.moveRunner.title")}</p>
+              <div className="flex flex-wrap gap-2">
+                {MOVE_DESTINATIONS[baseAction.base].map((destination) => (
+                  <button
+                    key={destination}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setBaseAction({ kind: "move-reason", base: baseAction.base, destination })}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                  >
+                    {t(`game.moveRunner.destination.${destination}`)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {baseAction.kind === "move-reason" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.moveRunner.reasonTitle")}</p>
+              <div className="flex flex-wrap gap-2">
+                {(["hit", "error", "steal", "other"] as const).map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      moveBaseRunner(baseAction.base, baseAction.destination, reason);
+                      setBaseAction(null);
+                    }}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                  >
+                    {t(`game.moveRunner.reason.${reason}`)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setBaseAction(null)}
+            className="self-start text-xs font-medium text-slate-500 underline"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
+
+      {isLive && isApprovedAdmin && batterPrompt && (
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+          {batterPrompt === "choose" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.currentBatterPrompt.title")}</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBatterPrompt("replace")}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                >
+                  {t("game.currentBatterPrompt.replace")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatterPrompt("resume")}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                >
+                  {t("game.currentBatterPrompt.resumeOrder")}
+                </button>
+              </div>
+            </>
+          )}
+
+          {batterPrompt === "replace" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.selectReplacement")}</p>
+              <div className="flex flex-wrap gap-2">
+                {roster
+                  .filter((p) => !initialLineup.includes(p.id))
+                  .map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        if (game.current_batter_player_id) {
+                          substituteLineupPlayer(game.current_batter_player_id, p.id);
+                        }
+                        setBatterPrompt(null);
+                      }}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                    >
+                      {playerName(p.id)}
+                    </button>
+                  ))}
+              </div>
+            </>
+          )}
+
+          {batterPrompt === "resume" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.selectResumeBatter")}</p>
+              <div className="flex flex-wrap gap-2">
+                {initialLineup.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      setCurrentBatter(id);
+                      setBatterPrompt(null);
+                    }}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                  >
+                    {playerName(id)}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setBatterPrompt(null)}
+            className="self-start text-xs font-medium text-slate-500 underline"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
+
       {isLive && isApprovedAdmin && (
         <div className="flex flex-col gap-2">
+          {isOurHalf && (
+            <div className="flex gap-2">
+              {(["single", "double", "triple", "home_run"] as const).map((hitType) => (
+                <button
+                  key={hitType}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => recordHit(hitType)}
+                  className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+                >
+                  {t(`game.hit.${hitType}`)}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-2">
             {(
               [

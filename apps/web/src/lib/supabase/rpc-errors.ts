@@ -21,7 +21,13 @@ const RPC_ERROR_KEYS: Record<string, string> = {
   INVITE_EMAIL_MISMATCH: "errors.inviteEmailMismatch",
   GAME_ALREADY_FINAL: "errors.gameAlreadyFinal",
   ADMIN_NOT_FOUND: "errors.adminNotFound",
-  CANNOT_REMOVE_SELF: "errors.cannotRemoveSelf"
+  CANNOT_REMOVE_SELF: "errors.cannotRemoveSelf",
+  INVALID_HIT_TYPE: "errors.invalidHitType",
+  PLAYER_NOT_IN_LINEUP: "errors.playerNotInLineup",
+  PLAYER_ALREADY_IN_LINEUP: "errors.playerAlreadyInLineup",
+  NO_RUNNER_ON_BASE: "errors.noRunnerOnBase",
+  INVALID_BASE: "errors.invalidBase",
+  INVALID_MOVE_REASON: "errors.invalidMoveReason"
 };
 
 export function rpcErrorKey(message: string | undefined | null): string {

@@ -238,6 +238,38 @@
       "first": "Primera base",
       "second": "Segunda base",
       "third": "Tercera base"
+    },
+    "hit": {
+      "single": "Sencillo",
+      "double": "Doble",
+      "triple": "Triple",
+      "home_run": "Jonrón"
+    },
+    "currentBatterPrompt": {
+      "title": "¿Qué pasó?",
+      "replace": "Reemplazar bateador actual",
+      "resumeOrder": "Continuar orden desde este bateador"
+    },
+    "selectReplacement": "Selecciona un reemplazo",
+    "selectResumeBatter": "Selecciona quién está realmente al bate",
+    "noReserveAvailable": "No hay jugadores de reserva disponibles",
+    "substitutePlayer": "Sustituir",
+    "moveRunner": {
+      "placeTitle": "¿Quién está en base?",
+      "title": "Mover este corredor a...",
+      "reasonTitle": "¿Por qué?",
+      "destination": {
+        "second": "Segunda base",
+        "third": "Tercera base",
+        "home": "Home (anota)",
+        "out": "Out"
+      },
+      "reason": {
+        "hit": "Hit",
+        "error": "Error",
+        "steal": "Base robada",
+        "other": "Otro"
+      }
     }
   },
   "notifications": {
@@ -272,7 +304,8 @@
     "snackRemoved": "Eliminado",
     "profileUpdated": "Perfil actualizado",
     "gameStarted": "Partido iniciado",
-    "gameFinalized": "Partido finalizado"
+    "gameFinalized": "Partido finalizado",
+    "playerSubstituted": "Jugador sustituido"
   },
   "errors": {
     "notAuthenticated": "Debes iniciar sesión para continuar",
@@ -295,6 +328,12 @@
     "adminNotFound": "Administrador no encontrado",
     "cannotRemoveSelf": "No puedes quitarte a ti mismo como administrador",
     "fullNameRequired": "El nombre completo es obligatorio",
-    "phoneAlreadyInUse": "Este número de teléfono ya está registrado en otra cuenta"
+    "phoneAlreadyInUse": "Este número de teléfono ya está registrado en otra cuenta",
+    "invalidHitType": "Tipo de hit inválido",
+    "playerNotInLineup": "Ese jugador no está en la alineación",
+    "playerAlreadyInLineup": "Ese jugador ya está en la alineación",
+    "noRunnerOnBase": "No hay corredor en esa base",
+    "invalidBase": "Base inválida",
+    "invalidMoveReason": "Motivo inválido"
   }
 }

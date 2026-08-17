@@ -180,6 +180,7 @@ export function LineupSetup({
   const [opponentPitcherNumber, setOpponentPitcherNumber] = useState(initialGame?.opponent_pitcher_number ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [substitutingId, setSubstitutingId] = useState<string | null>(null);
 
   const ourDrag = useDragReorder(ourLineup, setOurLineup);
   const opponentDrag = useDragReorder(opponentEntries, setOpponentEntries);
@@ -215,6 +216,27 @@ export function LineupSetup({
     } else {
       addToast(t("toast.lineupSaved"), "success");
     }
+  }
+
+  // Immediate write (bypasses "Guardar alineación"/set_lineup entirely) --
+  // preserves batting_order and current_batter_player_id, unlike a full
+  // lineup save. No offline queueing, matching this component's existing
+  // no-offline behavior for lineup changes.
+  async function substitutePlayer(outgoingId: string, incomingId: string) {
+    setLoading(true);
+    setError(null);
+    const { error: subError } = await supabase.rpc("substitute_lineup_player", {
+      p_game_id: confirmedGameId,
+      p_outgoing_player_id: outgoingId,
+      p_incoming_player_id: incomingId
+    });
+    setLoading(false);
+    if (subError) {
+      setError(t(rpcErrorKey(subError.message)));
+      return;
+    }
+    setOurLineup((prev) => prev.map((id) => (id === outgoingId ? incomingId : id)));
+    addToast(t("toast.playerSubstituted"), "success");
   }
 
   async function selectOurPitcher(playerId: string) {
@@ -312,34 +334,69 @@ export function LineupSetup({
                   userSelect: "none",
                   WebkitUserSelect: "none"
                 }}
-                className={`flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2 py-2 ${
+                className={`flex flex-col gap-1 rounded-lg border border-slate-300 bg-white px-2 py-2 ${
                   ourDrag.draggingIndex === index ? "relative z-10 shadow-md" : ""
                 }`}
               >
-                <span
-                  onPointerDown={(e) => ourDrag.onPointerDown(index, e)}
-                  onPointerMove={ourDrag.onPointerMove}
-                  onPointerUp={ourDrag.onPointerUp}
-                  onPointerCancel={ourDrag.onPointerCancel}
-                  style={{ touchAction: "none" }}
-                  className="flex h-8 w-8 cursor-grab items-center justify-center text-slate-400"
-                >
-                  ⠿
-                </span>
-                <span className="w-5 text-sm font-medium text-slate-500">{index + 1}</span>
-                <span className="flex-1 text-sm text-slate-900">
-                  {player.first_name} {player.last_name}
-                  {player.jersey_number ? ` #${player.jersey_number}` : ""}
-                </span>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => removeFromOurLineup(player.id)}
-                  aria-label={t("common.delete")}
-                  className="text-xs font-medium text-slate-400 hover:text-slate-600"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <span
+                    onPointerDown={(e) => ourDrag.onPointerDown(index, e)}
+                    onPointerMove={ourDrag.onPointerMove}
+                    onPointerUp={ourDrag.onPointerUp}
+                    onPointerCancel={ourDrag.onPointerCancel}
+                    style={{ touchAction: "none" }}
+                    className="flex h-8 w-8 cursor-grab items-center justify-center text-slate-400"
+                  >
+                    ⠿
+                  </span>
+                  <span className="w-5 text-sm font-medium text-slate-500">{index + 1}</span>
+                  <span className="flex-1 text-sm text-slate-900">
+                    {player.first_name} {player.last_name}
+                    {player.jersey_number ? ` #${player.jersey_number}` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setSubstitutingId(substitutingId === player.id ? null : player.id)}
+                    aria-label={t("game.substitutePlayer")}
+                    title={t("game.substitutePlayer")}
+                    className="text-sm font-medium text-slate-400 hover:text-slate-600"
+                  >
+                    ⇄
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => removeFromOurLineup(player.id)}
+                    aria-label={t("common.delete")}
+                    className="text-xs font-medium text-slate-400 hover:text-slate-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {substitutingId === player.id && (
+                  <div className="flex flex-wrap gap-2 pl-7">
+                    {availablePlayers.length === 0 && (
+                      <span className="text-xs text-slate-500">{t("game.noReserveAvailable")}</span>
+                    )}
+                    {availablePlayers.map((bench) => (
+                      <button
+                        key={bench.id}
+                        type="button"
+                        disabled={loading}
+                        onClick={() => {
+                          substitutePlayer(player.id, bench.id);
+                          setSubstitutingId(null);
+                        }}
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 disabled:opacity-50"
+                      >
+                        {bench.first_name} {bench.last_name}
+                        {bench.jersey_number ? ` #${bench.jersey_number}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

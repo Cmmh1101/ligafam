@@ -87,7 +87,7 @@ export default async function EventDetailPage({
       ? await supabase
           .from("games")
           .select(
-            "id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes, home_or_away, current_batter_player_id, current_pitcher_player_id, opponent_pitcher_name, opponent_pitcher_number, current_opponent_batter_id, our_pitcher_pitch_count, opponent_pitcher_pitch_count, last_pitch_charged_to, runner_on_first, runner_on_second, runner_on_third"
+            "id, status, our_score, opponent_score, current_inning, inning_half, outs, balls, strikes, home_or_away, current_batter_player_id, current_pitcher_player_id, opponent_pitcher_name, opponent_pitcher_number, current_opponent_batter_id, our_pitcher_pitch_count, opponent_pitcher_pitch_count, last_pitch_charged_to, runner_on_first, runner_on_second, runner_on_third, runner_on_first_player_id, runner_on_second_player_id, runner_on_third_player_id"
           )
           .eq("event_id", eventId)
           .maybeSingle()

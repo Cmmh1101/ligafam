@@ -43,6 +43,9 @@ export type GameState = {
   runner_on_first: boolean;
   runner_on_second: boolean;
   runner_on_third: boolean;
+  runner_on_first_player_id: string | null;
+  runner_on_second_player_id: string | null;
+  runner_on_third_player_id: string | null;
 };
 
 // Safe as array-index+1-with-wraparound ONLY because game_lineup/
@@ -106,6 +109,35 @@ export function applyCountEvent(
         next.balls = 0;
         next.strikes = 0;
         paEnded = true;
+
+        // Identity cascade first (reads the OLD booleans, still on `game`)
+        // -- third depends on old first+second, second depends on old
+        // first, matching the boolean cascade's dependency order. Only
+        // carried when it's our half; the opponent side never gets
+        // identity.
+        if (weAreBatting) {
+          if (game.runner_on_first && game.runner_on_second) {
+            next.runner_on_third_player_id = game.runner_on_second_player_id;
+          }
+          if (game.runner_on_first) {
+            next.runner_on_second_player_id = game.runner_on_first_player_id;
+          }
+          next.runner_on_first_player_id = game.current_batter_player_id;
+        } else {
+          next.runner_on_first_player_id = null;
+          next.runner_on_second_player_id = null;
+          next.runner_on_third_player_id = null;
+        }
+
+        const runScored = game.runner_on_first && game.runner_on_second && game.runner_on_third;
+        next.runner_on_third = (game.runner_on_first && game.runner_on_second) || game.runner_on_third;
+        next.runner_on_second = game.runner_on_first || game.runner_on_second;
+        next.runner_on_first = true;
+
+        if (runScored && game.home_or_away !== null) {
+          if (weAreBatting) next.our_score = game.our_score + 1;
+          else next.opponent_score = game.opponent_score + 1;
+        }
       }
     } else if (eventType === "strike") {
       next.strikes = game.strikes + 1;
@@ -133,6 +165,9 @@ export function applyCountEvent(
       next.runner_on_first = false;
       next.runner_on_second = false;
       next.runner_on_third = false;
+      next.runner_on_first_player_id = null;
+      next.runner_on_second_player_id = null;
+      next.runner_on_third_player_id = null;
     }
 
     if (paEnded && game.home_or_away !== null) {
@@ -163,10 +198,16 @@ export function applyRunEvent(game: GameState, runs: 1 | -1, scoringTeam: "us" |
     : { ...game, opponent_score: Math.max(game.opponent_score + runs, 0) };
 }
 
-export function applyBaseRunner(game: GameState, base: "first" | "second" | "third", occupied: boolean): GameState {
-  if (base === "first") return { ...game, runner_on_first: occupied };
-  if (base === "second") return { ...game, runner_on_second: occupied };
-  return { ...game, runner_on_third: occupied };
+export function applyBaseRunner(
+  game: GameState,
+  base: "first" | "second" | "third",
+  occupied: boolean,
+  playerId: string | null = null
+): GameState {
+  const id = occupied ? playerId : null;
+  if (base === "first") return { ...game, runner_on_first: occupied, runner_on_first_player_id: id };
+  if (base === "second") return { ...game, runner_on_second: occupied, runner_on_second_player_id: id };
+  return { ...game, runner_on_third: occupied, runner_on_third_player_id: id };
 }
 
 export function applyHomeOrAway(game: GameState, value: "home" | "away"): GameState {
@@ -179,4 +220,158 @@ export function applyAdvanceBatter(game: GameState, ourLineup: string[]): GameSt
 
 export function applyAdvanceOpponentBatter(game: GameState, opponentLineup: string[]): GameState {
   return { ...game, current_opponent_batter_id: nextInOrder(opponentLineup, game.current_opponent_batter_id) };
+}
+
+export type HitType = "single" | "double" | "triple" | "home_run";
+
+// Mirrors record_batter_hit: single/double/triple place only the new
+// batter (existing runners are left exactly where they are -- real
+// advancement on a hit is situational, not a fixed rule); home_run scores
+// the batter and every occupied base (the one deterministic case) and
+// clears the diamond.
+export function applyBatterHit(
+  game: GameState,
+  hitType: HitType,
+  ourLineup: string[],
+  opponentLineup: string[]
+): GameState {
+  const next = { ...game };
+  const weAreBatting =
+    game.home_or_away !== null &&
+    ((game.inning_half === "top" && game.home_or_away === "away") ||
+      (game.inning_half === "bottom" && game.home_or_away === "home"));
+
+  const batterId = weAreBatting ? game.current_batter_player_id : null;
+  let runs = 0;
+
+  if (hitType === "home_run") {
+    // Deterministic: batter and every occupied base all score, bases clear.
+    runs = 1;
+    if (game.runner_on_first) runs += 1;
+    if (game.runner_on_second) runs += 1;
+    if (game.runner_on_third) runs += 1;
+    next.runner_on_first = false;
+    next.runner_on_second = false;
+    next.runner_on_third = false;
+    next.runner_on_first_player_id = null;
+    next.runner_on_second_player_id = null;
+    next.runner_on_third_player_id = null;
+  } else if (hitType === "triple") {
+    // Landing base (3rd) forces anyone already there home; 1st/2nd
+    // untouched (no collision -- purely discretionary, left for
+    // applyMoveBaseRunner).
+    if (game.runner_on_third) runs += 1;
+    next.runner_on_third = true;
+    next.runner_on_third_player_id = batterId;
+  } else if (hitType === "double") {
+    // Landing base (2nd) forces anyone there to 3rd, cascading home if 3rd
+    // was also occupied. 1st untouched.
+    if (game.runner_on_second) {
+      if (game.runner_on_third) runs += 1;
+      next.runner_on_third = true;
+      next.runner_on_third_player_id = game.runner_on_second_player_id;
+    }
+    next.runner_on_second = true;
+    next.runner_on_second_player_id = batterId;
+  } else {
+    // single: landing base (1st) forces anyone there to 2nd, cascading to
+    // 3rd (and home) as needed -- same shape as the walk's force cascade.
+    if (game.runner_on_first) {
+      if (game.runner_on_second) {
+        if (game.runner_on_third) runs += 1;
+        next.runner_on_third = true;
+        next.runner_on_third_player_id = game.runner_on_second_player_id;
+      }
+      next.runner_on_second = true;
+      next.runner_on_second_player_id = game.runner_on_first_player_id;
+    }
+    next.runner_on_first = true;
+    next.runner_on_first_player_id = batterId;
+  }
+
+  if (runs > 0 && game.home_or_away !== null) {
+    if (weAreBatting) next.our_score = game.our_score + runs;
+    else next.opponent_score = game.opponent_score + runs;
+  }
+
+  next.balls = 0;
+  next.strikes = 0;
+
+  if (game.home_or_away !== null) {
+    if (weAreBatting) {
+      if (ourLineup.length > 0) next.current_batter_player_id = nextInOrder(ourLineup, game.current_batter_player_id);
+    } else {
+      if (opponentLineup.length > 0)
+        next.current_opponent_batter_id = nextInOrder(opponentLineup, game.current_opponent_batter_id);
+    }
+  }
+
+  return next;
+}
+
+export function applySetCurrentBatter(game: GameState, playerId: string): GameState {
+  return { ...game, current_batter_player_id: playerId };
+}
+
+// Mirrors move_base_runner's gameplay effect (the `reason` tag is
+// stats-only metadata handled server-side, not needed for local state).
+export function applyMoveBaseRunner(
+  game: GameState,
+  fromBase: "first" | "second" | "third",
+  toBase: "second" | "third" | "home" | "out"
+): GameState {
+  const next = { ...game };
+  const moverId =
+    fromBase === "first"
+      ? game.runner_on_first_player_id
+      : fromBase === "second"
+        ? game.runner_on_second_player_id
+        : game.runner_on_third_player_id;
+
+  if (fromBase === "first") {
+    next.runner_on_first = false;
+    next.runner_on_first_player_id = null;
+  } else if (fromBase === "second") {
+    next.runner_on_second = false;
+    next.runner_on_second_player_id = null;
+  } else {
+    next.runner_on_third = false;
+    next.runner_on_third_player_id = null;
+  }
+
+  if (toBase === "second") {
+    next.runner_on_second = true;
+    next.runner_on_second_player_id = moverId;
+  } else if (toBase === "third") {
+    next.runner_on_third = true;
+    next.runner_on_third_player_id = moverId;
+  } else if (toBase === "home") {
+    const weAreBatting =
+      game.home_or_away !== null &&
+      ((game.inning_half === "top" && game.home_or_away === "away") ||
+        (game.inning_half === "bottom" && game.home_or_away === "home"));
+    if (game.home_or_away !== null) {
+      if (weAreBatting) next.our_score = game.our_score + 1;
+      else next.opponent_score = game.opponent_score + 1;
+    }
+  } else {
+    next.outs = game.outs + 1;
+    if (next.outs >= 3) {
+      next.outs = 0;
+      if (game.inning_half === "top") {
+        next.inning_half = "bottom";
+      } else {
+        next.inning_half = "top";
+        next.current_inning = game.current_inning + 1;
+      }
+      next.runner_on_first = false;
+      next.runner_on_second = false;
+      next.runner_on_third = false;
+      next.runner_on_first_player_id = null;
+      next.runner_on_second_player_id = null;
+      next.runner_on_third_player_id = null;
+    }
+  }
+
+  return next;
 }

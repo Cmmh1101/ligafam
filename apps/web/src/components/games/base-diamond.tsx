@@ -7,14 +7,16 @@ type Base = "first" | "second" | "third";
 function BaseMarker({
   base,
   occupied,
+  runnerName,
   interactive,
-  onToggle,
+  onClick,
   className
 }: {
   base: Base;
   occupied: boolean;
+  runnerName?: string | null;
   interactive: boolean;
-  onToggle?: (base: Base, occupied: boolean) => void;
+  onClick?: (base: Base, occupied: boolean) => void;
   className: string;
 }) {
   const t = useTranslations();
@@ -23,13 +25,19 @@ function BaseMarker({
     <button
       type="button"
       disabled={!interactive}
-      onClick={() => onToggle?.(base, !occupied)}
-      aria-label={t(`game.base.${base}`)}
+      onClick={() => onClick?.(base, occupied)}
+      aria-label={runnerName ? `${t(`game.base.${base}`)}: ${runnerName}` : t(`game.base.${base}`)}
       aria-pressed={occupied}
-      className={`absolute h-6 w-6 rotate-45 border-2 ${
+      className={`absolute flex h-6 w-6 rotate-45 items-center justify-center border-2 ${
         occupied ? "border-yellow-500 bg-yellow-400" : "border-slate-400 bg-white"
       } ${interactive ? "cursor-pointer" : "cursor-default"} ${className}`}
-    />
+    >
+      {runnerName && (
+        <span className="absolute w-14 -rotate-45 truncate text-center text-[9px] font-semibold text-slate-800">
+          {runnerName}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -37,18 +45,26 @@ export function BaseDiamond({
   runnerOnFirst,
   runnerOnSecond,
   runnerOnThird,
-  onToggleBase,
+  runnerOnFirstName,
+  runnerOnSecondName,
+  runnerOnThirdName,
+  onBaseClick,
   battingName,
-  pitchingName
+  pitchingName,
+  onBattingNameClick
 }: {
   runnerOnFirst: boolean;
   runnerOnSecond: boolean;
   runnerOnThird: boolean;
-  onToggleBase?: (base: Base, occupied: boolean) => void;
+  runnerOnFirstName?: string | null;
+  runnerOnSecondName?: string | null;
+  runnerOnThirdName?: string | null;
+  onBaseClick?: (base: Base, occupied: boolean) => void;
   battingName?: string | null;
   pitchingName?: string | null;
+  onBattingNameClick?: () => void;
 }) {
-  const interactive = !!onToggleBase;
+  const interactive = !!onBaseClick;
 
   return (
     <div className="mx-auto flex flex-col items-center">
@@ -58,22 +74,25 @@ export function BaseDiamond({
         <BaseMarker
           base="second"
           occupied={runnerOnSecond}
+          runnerName={runnerOnSecondName}
           interactive={interactive}
-          onToggle={onToggleBase}
+          onClick={onBaseClick}
           className="left-1/2 top-0 -translate-x-1/2 -translate-y-1/2"
         />
         <BaseMarker
           base="first"
           occupied={runnerOnFirst}
+          runnerName={runnerOnFirstName}
           interactive={interactive}
-          onToggle={onToggleBase}
+          onClick={onBaseClick}
           className="right-0 top-1/2 translate-x-1/2 -translate-y-1/2"
         />
         <BaseMarker
           base="third"
           occupied={runnerOnThird}
+          runnerName={runnerOnThirdName}
           interactive={interactive}
-          onToggle={onToggleBase}
+          onClick={onBaseClick}
           className="left-0 top-1/2 -translate-x-1/2 -translate-y-1/2"
         />
 
@@ -91,11 +110,20 @@ export function BaseDiamond({
         <div className="absolute bottom-0 left-1/2 h-5 w-5 -translate-x-1/2 translate-y-1/2 rotate-45 border-2 border-slate-400 bg-slate-100" />
       </div>
 
-      {battingName && (
-        <span className="mt-3 max-w-[9rem] truncate text-center text-xs font-semibold text-slate-800">
-          {battingName}
-        </span>
-      )}
+      {battingName &&
+        (onBattingNameClick ? (
+          <button
+            type="button"
+            onClick={onBattingNameClick}
+            className="mt-3 max-w-[9rem] truncate text-center text-xs font-semibold text-slate-800 underline decoration-dotted"
+          >
+            {battingName}
+          </button>
+        ) : (
+          <span className="mt-3 max-w-[9rem] truncate text-center text-xs font-semibold text-slate-800">
+            {battingName}
+          </span>
+        ))}
     </div>
   );
 }
