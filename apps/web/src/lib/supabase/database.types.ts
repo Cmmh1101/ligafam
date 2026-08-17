@@ -390,6 +390,130 @@ export type Database = {
           sent_at?: string;
         }
       >;
+      game_plate_appearances: TableDef<
+        {
+          id: string;
+          game_id: string;
+          side: string;
+          batter_player_id: string | null;
+          pitcher_player_id: string | null;
+          outcome: string;
+          rbi: number;
+          inning: number;
+          inning_half: string;
+          created_by: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          game_id: string;
+          side: string;
+          batter_player_id?: string | null;
+          pitcher_player_id?: string | null;
+          outcome: string;
+          rbi?: number;
+          inning: number;
+          inning_half: string;
+          created_by?: string | null;
+          created_at?: string;
+        }
+      >;
+      game_runs_scored: TableDef<
+        {
+          id: string;
+          game_id: string;
+          plate_appearance_id: string | null;
+          side: string;
+          scorer_player_id: string | null;
+          credited_pitcher_id: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          game_id: string;
+          plate_appearance_id?: string | null;
+          side: string;
+          scorer_player_id?: string | null;
+          credited_pitcher_id?: string | null;
+          created_at?: string;
+        }
+      >;
+      game_runner_advances: TableDef<
+        {
+          id: string;
+          game_id: string;
+          player_id: string;
+          from_base: string;
+          to_base: string;
+          reason: string;
+          created_by: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          game_id: string;
+          player_id: string;
+          from_base: string;
+          to_base: string;
+          reason: string;
+          created_by?: string | null;
+          created_at?: string;
+        }
+      >;
+      player_season_batting_stats: TableDef<
+        {
+          season_id: string;
+          player_id: string;
+          at_bats: number;
+          hits: number;
+          doubles: number;
+          triples: number;
+          home_runs: number;
+          walks: number;
+          strikeouts: number;
+          runs: number;
+          rbi: number;
+          stolen_bases: number;
+          updated_at: string;
+        },
+        {
+          season_id: string;
+          player_id: string;
+          at_bats?: number;
+          hits?: number;
+          doubles?: number;
+          triples?: number;
+          home_runs?: number;
+          walks?: number;
+          strikeouts?: number;
+          runs?: number;
+          rbi?: number;
+          stolen_bases?: number;
+          updated_at?: string;
+        }
+      >;
+      player_season_pitching_stats: TableDef<
+        {
+          season_id: string;
+          player_id: string;
+          outs_recorded: number;
+          strikeouts: number;
+          walks_issued: number;
+          hits_allowed: number;
+          runs_allowed: number;
+          updated_at: string;
+        },
+        {
+          season_id: string;
+          player_id: string;
+          outs_recorded?: number;
+          strikeouts?: number;
+          walks_issued?: number;
+          hits_allowed?: number;
+          runs_allowed?: number;
+          updated_at?: string;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -475,6 +599,7 @@ export type Database = {
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };
+      recalculate_player_stats: { Args: { p_season_id: string }; Returns: undefined };
       create_team: {
         Args: {
           p_name: string;
