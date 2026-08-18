@@ -609,6 +609,16 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["teams"]["Row"];
       };
+      update_team: {
+        Args: {
+          p_team_id: string;
+          p_name: string;
+          p_age_group: string | null;
+          p_visibility: TeamVisibility;
+          p_logo_url: string | null;
+        };
+        Returns: Database["public"]["Tables"]["teams"]["Row"];
+      };
       get_joinable_team: {
         Args: { p_invite_code: string };
         Returns: Pick<

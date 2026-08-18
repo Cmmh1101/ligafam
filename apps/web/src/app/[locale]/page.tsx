@@ -1,6 +1,7 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { ProfileMenu } from "@/components/auth/profile-menu";
+import { TeamLogo } from "@/components/teams/team-logo";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -16,6 +17,7 @@ export default async function HomePage() {
     teamId: string;
     name: string;
     ageGroup: string | null;
+    logoUrl: string | null;
     role: string;
     status: string;
     record: { wins: number; losses: number; ties: number } | null;
@@ -41,7 +43,7 @@ export default async function HomePage() {
 
     const { data: teamRows } =
       teamIds.length > 0
-        ? await supabase.from("teams").select("id, name, age_group").in("id", teamIds)
+        ? await supabase.from("teams").select("id, name, age_group, logo_url").in("id", teamIds)
         : { data: [] };
 
     const teamById = new Map((teamRows ?? []).map((t) => [t.id, t]));
@@ -78,6 +80,7 @@ export default async function HomePage() {
           teamId: m.team_id,
           name: team.name,
           ageGroup: team.age_group,
+          logoUrl: team.logo_url,
           role: m.role,
           status: m.status,
           record: recordByTeamId.get(m.team_id) ?? null
@@ -104,21 +107,20 @@ export default async function HomePage() {
             {teams.length === 0 ? (
               <p className="text-slate-600">{t("team.noTeamsYet")}</p>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="grid grid-cols-2 gap-3">
                 {teams.map((team) => (
                   <li key={team.membershipId}>
                     <a
                       href={`/${locale}/teams/${team.teamId}`}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 hover:bg-slate-50"
+                      className="flex h-full flex-col items-center gap-2 rounded-lg border border-slate-200 p-4 text-center hover:bg-slate-50"
                     >
-                      <div className="flex flex-col">
-                        <span className="font-medium text-slate-900">{team.name}</span>
-                        <span className="text-xs text-slate-500">
-                          {t(`roles.${team.role}`)}
-                          {team.ageGroup ? ` · ${team.ageGroup}` : ""}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
+                      <TeamLogo logoUrl={team.logoUrl} name={team.name} size={48} />
+                      <span className="line-clamp-2 font-medium text-slate-900">{team.name}</span>
+                      <span className="text-xs text-slate-500">
+                        {t(`roles.${team.role}`)}
+                        {team.ageGroup ? ` · ${team.ageGroup}` : ""}
+                      </span>
+                      <div className="flex flex-col items-center gap-1">
                         {team.status !== "approved" && (
                           <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
                             {t(`team.status${team.status.charAt(0).toUpperCase()}${team.status.slice(1)}`)}

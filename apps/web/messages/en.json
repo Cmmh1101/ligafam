@@ -17,7 +17,8 @@
     "back": "Back",
     "myTeams": "My teams",
     "createTeam": "Create team",
-    "offlineBanner": "Offline — showing last synced data"
+    "offlineBanner": "Offline — showing last synced data",
+    "close": "Close"
   },
   "auth": {
     "tagline": "Follow your team's games live, manage the roster, and never miss an update.",
@@ -64,6 +65,9 @@
     "ageGroup": "Age group",
     "ageGroupHint": "Optional, e.g. 10U",
     "createTeamTitle": "Create a new team",
+    "editTeam": "Edit team",
+    "logo": "Team logo",
+    "logoHint": "PNG or JPG. Leave blank to keep the current logo.",
     "visibility": {
       "public": "Public",
       "private": "Private"
@@ -315,6 +319,7 @@
     "eventUpdated": "Event updated",
     "eventDeleted": "Event deleted",
     "teamCreated": "Team created",
+    "teamUpdated": "Team updated",
     "requestApproved": "Request approved",
     "requestRejected": "Request rejected",
     "adminRemoved": "Admin removed",

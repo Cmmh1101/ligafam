@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { ActionButton } from "@/components/action-button";
 import { InviteAdminForm } from "@/components/teams/invite-admin-form";
+import { TeamLogo } from "@/components/teams/team-logo";
 import { approveRequestAction, rejectRequestAction, removeAdminAction } from "./actions";
 import { createAdminInviteAction, revokeAdminInviteAction } from "./admin-invite/actions";
 
@@ -233,7 +234,20 @@ export default async function TeamPage({
 
   return (
     <>
-      {team.age_group && <p className="text-sm text-slate-500">{team.age_group}</p>}
+      <div className="flex items-center gap-3">
+        <TeamLogo logoUrl={team.logo_url} name={team.name} size={48} />
+        <div className="flex flex-col">
+          {team.age_group && <p className="text-sm text-slate-500">{team.age_group}</p>}
+          {isApprovedAdmin && (
+            <a
+              href={`/${locale}/teams/${teamId}/edit`}
+              className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+            >
+              {t("team.editTeam")}
+            </a>
+          )}
+        </div>
+      </div>
 
       {error && <p className="text-sm text-red-600">{t(error)}</p>}
 

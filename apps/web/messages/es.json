@@ -17,7 +17,8 @@
     "back": "Atrás",
     "myTeams": "Mis equipos",
     "createTeam": "Crear equipo",
-    "offlineBanner": "Sin conexión — mostrando la última información guardada"
+    "offlineBanner": "Sin conexión — mostrando la última información guardada",
+    "close": "Cerrar"
   },
   "auth": {
     "tagline": "Sigue los partidos de tu equipo en vivo, gestiona el roster y no te pierdas ninguna novedad.",
@@ -64,6 +65,9 @@
     "ageGroup": "Categoría de edad",
     "ageGroupHint": "Opcional, ej. 10U",
     "createTeamTitle": "Crear un nuevo equipo",
+    "editTeam": "Editar equipo",
+    "logo": "Logo del equipo",
+    "logoHint": "PNG o JPG. Déjalo en blanco para mantener el logo actual.",
     "visibility": {
       "public": "Público",
       "private": "Privado"
@@ -315,6 +319,7 @@
     "eventUpdated": "Evento actualizado",
     "eventDeleted": "Evento eliminado",
     "teamCreated": "Equipo creado",
+    "teamUpdated": "Equipo actualizado",
     "requestApproved": "Solicitud aprobada",
     "requestRejected": "Solicitud rechazada",
     "adminRemoved": "Administrador eliminado",

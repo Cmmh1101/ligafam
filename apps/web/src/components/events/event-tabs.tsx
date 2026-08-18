@@ -14,7 +14,7 @@ export function EventTabs({
   boardContent: ReactNode;
   rosterContent: ReactNode;
   statsContent: ReactNode;
-  snacksContent: ReactNode;
+  snacksContent: ReactNode | null;
 }) {
   const t = useTranslations();
   const [tab, setTab] = useState<Tab>("board");
@@ -23,7 +23,7 @@ export function EventTabs({
     { key: "board", label: t("game.boardTab") },
     { key: "roster", label: t("game.rosterTab") },
     { key: "stats", label: t("game.statsTab") },
-    { key: "snacks", label: t("game.snacksTab") }
+    ...(snacksContent !== null ? [{ key: "snacks" as Tab, label: t("game.snacksTab") }] : [])
   ];
 
   return (
@@ -43,14 +43,18 @@ export function EventTabs({
         ))}
       </div>
 
-      {/* All three panels stay mounted -- toggled via CSS, not conditional
-          rendering -- so GameScorePanel's Realtime subscription (inside
-          boardContent) doesn't drop and re-establish every time the admin
-          switches tabs. */}
+      {/* Panels stay mounted -- toggled via CSS, not conditional rendering
+          -- so GameScorePanel's Realtime subscription (inside boardContent)
+          doesn't drop and re-establish every time the admin switches tabs.
+          The snacks panel is the one exception: it's omitted entirely (not
+          just hidden) when snacksContent is null, for viewers who aren't
+          admin/family. */}
       <div className={tab === "board" ? "flex flex-col gap-6" : "hidden"}>{boardContent}</div>
       <div className={tab === "roster" ? "flex flex-col gap-6" : "hidden"}>{rosterContent}</div>
       <div className={tab === "stats" ? "flex flex-col gap-6" : "hidden"}>{statsContent}</div>
-      <div className={tab === "snacks" ? "flex flex-col gap-6" : "hidden"}>{snacksContent}</div>
+      {snacksContent !== null && (
+        <div className={tab === "snacks" ? "flex flex-col gap-6" : "hidden"}>{snacksContent}</div>
+      )}
     </div>
   );
 }

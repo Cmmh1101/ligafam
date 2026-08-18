@@ -198,7 +198,7 @@ export default async function EventDetailPage({
   // decided_by), so that embed is ambiguous and silently fails the whole
   // query -- which is why the list was showing empty despite real rows
   // existing.
-  const { data: snackRows } = isApprovedMember
+  const { data: snackRows } = isApprovedAdmin || isApprovedFamily
     ? await supabase
         .from("snack_assignments")
         .select("id, item, family_link_id, family_links(players(first_name, last_name))")
@@ -251,7 +251,7 @@ export default async function EventDetailPage({
     </div>
   );
 
-  const snacksSection = isApprovedMember && (
+  const snacksSection = (isApprovedAdmin || isApprovedFamily) ? (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-medium text-slate-500">{t("snacks.title")}</h2>
 
@@ -287,9 +287,92 @@ export default async function EventDetailPage({
         </ul>
       )}
 
-      {(isApprovedAdmin || isApprovedFamily) && <ClaimSnackForm action={claimSnack} />}
+      <ClaimSnackForm action={claimSnack} />
     </div>
-  );
+  ) : null;
+
+  if (event.type === "game" && isApprovedMember) {
+    // Full-screen takeover: `fixed inset-0` escapes the team layout's
+    // `max-w-md` wrapper (teams/[teamId]/layout.tsx) since nothing in that
+    // ancestor chain creates a new containing block, so this visually
+    // covers the layout's header/nav without needing to touch that file.
+    // Editar/Eliminar are hidden while the game is actually live so a
+    // mid-game admin can't accidentally edit/delete the event out from
+    // under an in-progress `games` row -- available before the first pitch
+    // (game is null or 'scheduled') and again once it's 'final'.
+    const canEditEvent = isApprovedAdmin && game?.status !== "live";
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col overscroll-contain bg-white">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <a
+              href={`/${locale}/teams/${teamId}/events`}
+              aria-label={t("common.close")}
+              className="shrink-0 text-2xl leading-none text-slate-500"
+            >
+              &times;
+            </a>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {event.title || event.opponent_name || t(`events.type.${event.type}`)}
+              </p>
+              <p className="truncate text-xs text-slate-500">{formatEventDateTime(event.starts_at, locale)}</p>
+            </div>
+          </div>
+          {canEditEvent && (
+            <div className="flex shrink-0 gap-3">
+              <a
+                href={`/${locale}/teams/${teamId}/events/${eventId}/edit`}
+                className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+              >
+                {t("common.edit")}
+              </a>
+              <ConfirmDeleteButton
+                action={deleteEvent}
+                label={t("common.delete")}
+                className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <EventTabs
+            boardContent={
+              <GameScorePanel
+                eventId={eventId}
+                teamId={teamId}
+                locale={locale}
+                initialGame={game}
+                isApprovedAdmin={isApprovedAdmin}
+                opponentName={event.opponent_name}
+                roster={gameRoster}
+                initialLineup={initialLineup}
+                initialOpponentLineup={initialOpponentLineup}
+              />
+            }
+            rosterContent={
+              <>
+                {rsvpSection}
+                {isApprovedAdmin && (
+                  <LineupSetup
+                    eventId={eventId}
+                    initialGame={game}
+                    roster={gameRoster}
+                    initialLineup={initialLineup}
+                    initialOpponentLineup={initialOpponentLineup}
+                  />
+                )}
+              </>
+            }
+            statsContent={<GameStatsView eventId={eventId} gameId={game?.id ?? null} roster={gameRoster} />}
+            snacksContent={snacksSection}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -319,44 +402,8 @@ export default async function EventDetailPage({
         )}
       </header>
 
-      {event.type === "game" && isApprovedMember ? (
-        <EventTabs
-          boardContent={
-            <GameScorePanel
-              eventId={eventId}
-              teamId={teamId}
-              locale={locale}
-              initialGame={game}
-              isApprovedAdmin={isApprovedAdmin}
-              opponentName={event.opponent_name}
-              roster={gameRoster}
-              initialLineup={initialLineup}
-              initialOpponentLineup={initialOpponentLineup}
-            />
-          }
-          rosterContent={
-            <>
-              {rsvpSection}
-              {isApprovedAdmin && (
-                <LineupSetup
-                  eventId={eventId}
-                  initialGame={game}
-                  roster={gameRoster}
-                  initialLineup={initialLineup}
-                  initialOpponentLineup={initialOpponentLineup}
-                />
-              )}
-            </>
-          }
-          statsContent={<GameStatsView eventId={eventId} gameId={game?.id ?? null} roster={gameRoster} />}
-          snacksContent={snacksSection}
-        />
-      ) : (
-        <>
-          {rsvpSection}
-          {snacksSection}
-        </>
-      )}
+      {rsvpSection}
+      {snacksSection}
     </>
   );
 }

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TeamNav } from "@/components/teams/team-nav";
 import { ProfileMenu } from "@/components/auth/profile-menu";
+import { TeamLogo } from "@/components/teams/team-logo";
 
 export default async function TeamLayout({
   children,
@@ -31,7 +32,11 @@ export default async function TeamLayout({
     .maybeSingle();
   const profileFullName = profile?.full_name ?? "";
 
-  const { data: team } = await supabase.from("teams").select("id, name").eq("id", teamId).maybeSingle();
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, name, logo_url")
+    .eq("id", teamId)
+    .maybeSingle();
 
   if (!team) {
     return (
@@ -61,6 +66,7 @@ export default async function TeamLayout({
           {t("common.myTeams")}
         </a>
         <div className="flex items-center gap-3">
+          <TeamLogo logoUrl={team.logo_url} name={team.name} size={28} />
           <span className="text-sm font-medium text-slate-900">{team.name}</span>
           <ProfileMenu locale={locale} fullName={profileFullName} email={user.email ?? ""} />
         </div>
