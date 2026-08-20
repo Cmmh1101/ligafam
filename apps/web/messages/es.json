@@ -46,6 +46,10 @@
     "newPassword": "Nueva contraseña",
     "updatePassword": "Guardar contraseña"
   },
+  "landing": {
+    "headline": "Sigue cada partido, estés donde estés.",
+    "subtitle": "Marcador en vivo, roster y actualizaciones de tu equipo — bilingüe, y funciona aunque la señal falle."
+  },
   "roles": {
     "admin": "Administrador",
     "family": "Responsable",

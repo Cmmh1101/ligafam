@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { ProfileMenu } from "@/components/auth/profile-menu";
 import { TeamLogo } from "@/components/teams/team-logo";
+import { LandingHero } from "@/components/landing-hero";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -166,7 +167,19 @@ export default async function HomePage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 flex-col items-center justify-between gap-8 py-2">
+          <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <h2 className="max-w-[280px] text-2xl font-bold leading-tight text-slate-900">
+                {t("landing.headline")}
+              </h2>
+              <p className="max-w-[260px] text-sm leading-relaxed text-slate-500">
+                {t("landing.subtitle")}
+              </p>
+            </div>
+            <LandingHero />
+          </div>
+
           <a
             href={`/${locale}/sign-in`}
             className="w-full rounded-lg bg-slate-900 px-4 py-3 text-center font-medium text-white"

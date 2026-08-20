@@ -46,6 +46,10 @@
     "newPassword": "New password",
     "updatePassword": "Save password"
   },
+  "landing": {
+    "headline": "Follow every game, from wherever you are.",
+    "subtitle": "Live scores, rosters, and updates for your team — bilingual, and built to keep working even when the signal doesn’t."
+  },
   "roles": {
     "admin": "Admin",
     "family": "Guardian",
