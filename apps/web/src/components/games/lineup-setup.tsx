@@ -12,7 +12,10 @@ type RosterPlayer = {
   first_name: string;
   last_name: string;
   jersey_number: string | null;
+  primary_position: string | null;
 };
+
+const POSITION_CODES = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"] as const;
 
 type InitialGame = {
   id: string;
@@ -129,13 +132,15 @@ export function LineupSetup({
   initialGame,
   roster,
   initialLineup,
-  initialOpponentLineup
+  initialOpponentLineup,
+  initialPositions
 }: {
   eventId: string;
   initialGame: InitialGame | null;
   roster: RosterPlayer[];
   initialLineup: string[];
   initialOpponentLineup: { display_name: string | null; jersey_number: string | null }[];
+  initialPositions: Record<string, string | null>;
 }) {
   const t = useTranslations();
   const supabase = createClient();
@@ -168,6 +173,13 @@ export function LineupSetup({
   }, [eventId, gameId]);
 
   const [ourLineup, setOurLineup] = useState<string[]>(initialLineup);
+  const [positions, setPositions] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    for (const player of roster) {
+      map[player.id] = initialPositions[player.id] ?? player.primary_position ?? "";
+    }
+    return map;
+  });
   const [ourPitcherId, setOurPitcherId] = useState(initialGame?.current_pitcher_player_id ?? "");
   const [opponentEntries, setOpponentEntries] = useState<OpponentEntry[]>(
     initialOpponentLineup.map((entry) => ({
@@ -249,6 +261,23 @@ export function LineupSetup({
     });
     setLoading(false);
     if (pitcherError) setError(t(rpcErrorKey(pitcherError.message)));
+  }
+
+  // Same immediate-write shape as selectOurPitcher. Only works for a
+  // player already saved into game_lineup -- a freshly-added-but-unsaved
+  // lineup slot surfaces PLAYER_NOT_IN_LINEUP via the existing error
+  // path, same as any other RPC failure here.
+  async function setLineupPosition(playerId: string, position: string) {
+    setPositions((prev) => ({ ...prev, [playerId]: position }));
+    setLoading(true);
+    setError(null);
+    const { error: positionError } = await supabase.rpc("set_lineup_position", {
+      p_game_id: confirmedGameId,
+      p_player_id: playerId,
+      p_position: position || null
+    });
+    setLoading(false);
+    if (positionError) setError(t(rpcErrorKey(positionError.message)));
   }
 
   function addOpponentEntry() {
@@ -354,6 +383,19 @@ export function LineupSetup({
                     {player.first_name} {player.last_name}
                     {player.jersey_number ? ` #${player.jersey_number}` : ""}
                   </span>
+                  <select
+                    value={positions[player.id] ?? ""}
+                    disabled={loading}
+                    onChange={(e) => setLineupPosition(player.id, e.target.value)}
+                    className="rounded-lg border border-slate-300 px-1.5 py-1 text-xs"
+                  >
+                    <option value="">—</option>
+                    {POSITION_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     disabled={loading}

@@ -107,14 +107,14 @@ export default async function EventDetailPage({
   const { data: gameRosterRows } = gameSeason
     ? await supabase
         .from("season_rosters")
-        .select("players(id, first_name, last_name, jersey_number)")
+        .select("players(id, first_name, last_name, jersey_number, primary_position)")
         .eq("season_id", gameSeason.id)
         .eq("active", true)
     : { data: [] };
 
   const gameRoster = (gameRosterRows ?? []).flatMap((row) => {
     const player = row.players as unknown as
-      | { id: string; first_name: string; last_name: string; jersey_number: string | null }
+      | { id: string; first_name: string; last_name: string; jersey_number: string | null; primary_position: string | null }
       | null;
     return player ? [player] : [];
   });
@@ -122,12 +122,15 @@ export default async function EventDetailPage({
   const { data: lineupRows } = game
     ? await supabase
         .from("game_lineup")
-        .select("player_id")
+        .select("player_id, position")
         .eq("game_id", game.id)
         .order("batting_order", { ascending: true })
     : { data: [] };
 
   const initialLineup = (lineupRows ?? []).map((row) => row.player_id as string);
+  const initialPositions = Object.fromEntries(
+    (lineupRows ?? []).map((row) => [row.player_id as string, row.position as string | null])
+  );
 
   const { data: opponentLineupRows } = game
     ? await supabase
@@ -350,6 +353,7 @@ export default async function EventDetailPage({
                 roster={gameRoster}
                 initialLineup={initialLineup}
                 initialOpponentLineup={initialOpponentLineup}
+                initialPositions={initialPositions}
               />
             }
             rosterContent={
@@ -362,6 +366,7 @@ export default async function EventDetailPage({
                     roster={gameRoster}
                     initialLineup={initialLineup}
                     initialOpponentLineup={initialOpponentLineup}
+                    initialPositions={initialPositions}
                   />
                 )}
               </>

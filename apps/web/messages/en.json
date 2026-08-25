@@ -96,6 +96,7 @@
     "firstName": "First name",
     "lastName": "Last name",
     "jerseyNumber": "Jersey number",
+    "primaryPosition": "Position",
     "noRoster": "No players on the roster yet",
     "notFoundOrNotMember": "Team not found, or you're not a member",
     "statusPending": "Pending",
@@ -266,6 +267,9 @@
       "title": "What happened?",
       "replace": "Replace current hitter",
       "resumeOrder": "Resume order from this hitter"
+    },
+    "pitcherPrompt": {
+      "title": "Select the new pitcher"
     },
     "selectReplacement": "Select a replacement",
     "selectResumeBatter": "Select who's actually up",

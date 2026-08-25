@@ -7,6 +7,7 @@ export async function addPlayerAction(locale: string, teamId: string, formData: 
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   const jerseyNumber = String(formData.get("jerseyNumber") ?? "").trim();
+  const primaryPosition = String(formData.get("primaryPosition") ?? "").trim();
 
   if (!firstName || !lastName) {
     return;
@@ -19,7 +20,8 @@ export async function addPlayerAction(locale: string, teamId: string, formData: 
     team_id: teamId,
     first_name: firstName,
     last_name: lastName,
-    jersey_number: jerseyNumber || null
+    jersey_number: jerseyNumber || null,
+    primary_position: primaryPosition || null
   });
 
   revalidatePath(`/${locale}/teams/${teamId}/roster`);

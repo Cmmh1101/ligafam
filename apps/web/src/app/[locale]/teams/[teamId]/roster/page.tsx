@@ -40,7 +40,7 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
 
   const { data: roster } = await supabase
     .from("players")
-    .select("id, first_name, last_name, jersey_number")
+    .select("id, first_name, last_name, jersey_number, primary_position")
     .eq("team_id", teamId)
     .order("last_name", { ascending: true });
 
@@ -82,9 +82,11 @@ export default async function RosterPage({ params }: { params: Promise<{ teamId:
                   <span className="text-slate-900">
                     {player.first_name} {player.last_name}
                   </span>
-                  {player.jersey_number && (
-                    <span className="text-sm text-slate-500">#{player.jersey_number}</span>
-                  )}
+                  <span className="text-sm text-slate-500">
+                    {player.jersey_number && `#${player.jersey_number}`}
+                    {player.jersey_number && player.primary_position && " · "}
+                    {player.primary_position}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <form action={toggleForPlayer}>

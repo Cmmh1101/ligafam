@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { rpcErrorKey } from "@/lib/supabase/rpc-errors";
-import { BaseDiamond } from "@/components/games/base-diamond";
+import { BaseDiamond, type FielderPosition } from "@/components/games/base-diamond";
 import { notifyGameStartedAction, notifyGameFinalizedAction } from "@/app/[locale]/teams/[teamId]/events/[eventId]/actions";
 import { queueAction, flushScoreOutbox, pendingScoreCount, type OutboxAction } from "@/lib/offline/db";
 import { useToast } from "@/components/toast/toast-context";
@@ -99,7 +99,8 @@ export function GameScorePanel({
   opponentName,
   roster,
   initialLineup,
-  initialOpponentLineup
+  initialOpponentLineup,
+  initialPositions
 }: {
   eventId: string;
   teamId: string;
@@ -110,6 +111,7 @@ export function GameScorePanel({
   roster: RosterPlayer[];
   initialLineup: string[];
   initialOpponentLineup: OpponentBatter[];
+  initialPositions: Record<string, string | null>;
 }) {
   const t = useTranslations();
   const { addToast } = useToast();
@@ -141,6 +143,10 @@ export function GameScorePanel({
   // prompt; "replace" opens a bench picker (substitute_lineup_player);
   // "resume" opens a full-lineup picker (set_current_batter).
   const [batterPrompt, setBatterPrompt] = useState<"choose" | "replace" | "resume" | null>(null);
+
+  // Pitcher click: always a straight substitution (no replace-vs-resume
+  // choice like the batter has) -- a single-step full-roster picker.
+  const [pitcherPrompt, setPitcherPrompt] = useState(false);
 
   const opponentBatterIds = opponentLineup.map((o) => o.id);
 
@@ -551,6 +557,24 @@ export function GameScorePanel({
     }
   }
 
+  // Online-only, matching selectOurPitcher's existing behavior in
+  // lineup-setup.tsx -- pitcher changes have never been queued offline.
+  async function setPitcher(playerId: string) {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const { error: pitcherError } = await supabase.rpc("set_current_pitcher", {
+      p_game_id: game.id,
+      p_player_id: playerId
+    });
+    setLoading(false);
+    if (pitcherError) {
+      setError(t(rpcErrorKey(pitcherError.message)));
+      return;
+    }
+    setGame({ ...game, current_pitcher_player_id: playerId });
+  }
+
   // Substitution is online-only (matches lineup-setup.tsx's existing
   // no-offline behavior for lineup changes) -- no outbox queueing here.
   async function substituteLineupPlayer(outgoingId: string, incomingId: string) {
@@ -751,6 +775,17 @@ export function GameScorePanel({
     }
   }
 
+  // Read-only field labels for the 8 non-pitcher spots -- the pitcher's
+  // own marker stays driven by current_pitcher_player_id, not this map
+  // (see plan: the live "who's actually pitching" pointer vs. the static
+  // "who's assigned where" roster plan never drift against each other).
+  const fielderPositions: Partial<Record<FielderPosition, string | null>> = {};
+  for (const [playerId, position] of Object.entries(initialPositions)) {
+    if (position && position !== "P") {
+      fielderPositions[position as FielderPosition] = playerName(playerId);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-medium text-slate-500">{t("game.title")}</h2>
@@ -821,6 +856,8 @@ export function GameScorePanel({
                   ? () => setBatterPrompt("choose")
                   : undefined
               }
+              onPitchingNameClick={isApprovedAdmin && !isOurHalf ? () => setPitcherPrompt(true) : undefined}
+              fielderPositions={fielderPositions}
             />
           ) : (
             <span className="text-slate-300">–</span>
@@ -1044,6 +1081,35 @@ export function GameScorePanel({
           <button
             type="button"
             onClick={() => setBatterPrompt(null)}
+            className="self-start text-xs font-medium text-slate-500 underline"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
+
+      {isLive && isApprovedAdmin && pitcherPrompt && (
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+          <p className="text-xs font-medium text-slate-500">{t("game.pitcherPrompt.title")}</p>
+          <div className="flex flex-wrap gap-2">
+            {roster.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                disabled={loading}
+                onClick={() => {
+                  setPitcher(p.id);
+                  setPitcherPrompt(false);
+                }}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+              >
+                {playerName(p.id)}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPitcherPrompt(false)}
             className="self-start text-xs font-medium text-slate-500 underline"
           >
             {t("common.cancel")}

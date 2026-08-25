@@ -96,6 +96,7 @@
     "firstName": "Nombre",
     "lastName": "Apellido",
     "jerseyNumber": "Número de camiseta",
+    "primaryPosition": "Posición",
     "noRoster": "Aún no hay jugadores en el roster",
     "notFoundOrNotMember": "No se encontró el equipo, o no eres miembro",
     "statusPending": "Pendiente",
@@ -266,6 +267,9 @@
       "title": "¿Qué pasó?",
       "replace": "Reemplazar bateador actual",
       "resumeOrder": "Continuar orden desde este bateador"
+    },
+    "pitcherPrompt": {
+      "title": "Selecciona el nuevo lanzador"
     },
     "selectReplacement": "Selecciona un reemplazo",
     "selectResumeBatter": "Selecciona quién está realmente al bate",

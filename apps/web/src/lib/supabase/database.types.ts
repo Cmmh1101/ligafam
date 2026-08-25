@@ -15,6 +15,7 @@ export type EventVisibility = "public" | "private";
 export type TeamVisibility = "public" | "private";
 export type HitType = "single" | "double" | "triple" | "home_run" | "hbp";
 export type RunnerMoveReason = "hit" | "error" | "steal" | "other" | "balk";
+export type PositionCode = "P" | "C" | "1B" | "2B" | "3B" | "SS" | "LF" | "CF" | "RF";
 
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
@@ -549,6 +550,10 @@ export type Database = {
       set_lineup: {
         Args: { p_game_id: string; p_player_ids: string[] };
         Returns: Database["public"]["Tables"]["game_lineup"]["Row"][];
+      };
+      set_lineup_position: {
+        Args: { p_game_id: string; p_player_id: string; p_position: string | null };
+        Returns: Database["public"]["Tables"]["game_lineup"]["Row"];
       };
       set_current_pitcher: {
         Args: { p_game_id: string; p_player_id: string | null };
