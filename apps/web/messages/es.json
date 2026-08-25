@@ -257,6 +257,11 @@
       "triple": "Triple",
       "home_run": "Jonrón"
     },
+    "hbpPrompt": {
+      "title": "¿Le pegó el lanzamiento al bateador?",
+      "yes": "Sí, golpeado por el lanzamiento",
+      "no": "No"
+    },
     "currentBatterPrompt": {
       "title": "¿Qué pasó?",
       "replace": "Reemplazar bateador actual",
@@ -280,7 +285,8 @@
         "hit": "Hit",
         "error": "Error",
         "steal": "Base robada",
-        "other": "Otro"
+        "other": "Otro",
+        "balk": "Balk"
       }
     },
     "statsTab": "Estadísticas",

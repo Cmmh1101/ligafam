@@ -257,6 +257,11 @@
       "triple": "Triple",
       "home_run": "Home run"
     },
+    "hbpPrompt": {
+      "title": "Was the batter hit by the pitch?",
+      "yes": "Yes, hit by pitch",
+      "no": "No"
+    },
     "currentBatterPrompt": {
       "title": "What happened?",
       "replace": "Replace current hitter",
@@ -280,7 +285,8 @@
         "hit": "Hit",
         "error": "Error",
         "steal": "Stolen base",
-        "other": "Other"
+        "other": "Other",
+        "balk": "Balk"
       }
     },
     "statsTab": "Stats",

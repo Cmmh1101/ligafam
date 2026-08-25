@@ -53,7 +53,7 @@ type Game = {
 
 type BaseKey = "first" | "second" | "third";
 type MoveDestination = "second" | "third" | "home" | "out";
-type MoveReason = "hit" | "error" | "steal" | "other";
+type MoveReason = "hit" | "error" | "steal" | "other" | "balk";
 
 const MOVE_DESTINATIONS: Record<BaseKey, MoveDestination[]> = {
   first: ["second", "third", "home", "out"],
@@ -125,8 +125,12 @@ export function GameScorePanel({
   // Base-diamond interaction: clicking an empty base (our half) opens a
   // "place" picker; clicking an occupied base opens the "move this runner"
   // menu (destination, then reason). Opponent's half bypasses this
-  // entirely -- see onBaseClick below.
+  // entirely -- see onBaseClick below. Tapping an empty FIRST base, on
+  // either half, is intercepted ahead of all of that by the hit-by-pitch
+  // prompt -- "no" falls through to whatever that tap would have done
+  // otherwise.
   const [baseAction, setBaseAction] = useState<
+    | { kind: "hbp-prompt"; base: "first" }
     | { kind: "place"; base: BaseKey }
     | { kind: "move-destination"; base: BaseKey }
     | { kind: "move-reason"; base: BaseKey; destination: MoveDestination }
@@ -798,6 +802,10 @@ export function GameScorePanel({
               onBaseClick={
                 isApprovedAdmin
                   ? (base, occupied) => {
+                      if (base === "first" && !occupied) {
+                        setBaseAction({ kind: "hbp-prompt", base: "first" });
+                        return;
+                      }
                       if (!isOurHalf) {
                         setBaseRunner(base, !occupied);
                         return;
@@ -854,6 +862,40 @@ export function GameScorePanel({
 
       {isLive && isApprovedAdmin && baseAction && (
         <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+          {baseAction.kind === "hbp-prompt" && (
+            <>
+              <p className="text-xs font-medium text-slate-500">{t("game.hbpPrompt.title")}</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    recordHit("hbp");
+                    setBaseAction(null);
+                  }}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                >
+                  {t("game.hbpPrompt.yes")}
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (isOurHalf) {
+                      setBaseAction({ kind: "place", base: "first" });
+                    } else {
+                      setBaseRunner("first", true);
+                      setBaseAction(null);
+                    }
+                  }}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+                >
+                  {t("game.hbpPrompt.no")}
+                </button>
+              </div>
+            </>
+          )}
+
           {baseAction.kind === "place" && (
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.moveRunner.placeTitle")}</p>
@@ -899,7 +941,7 @@ export function GameScorePanel({
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.moveRunner.reasonTitle")}</p>
               <div className="flex flex-wrap gap-2">
-                {(["hit", "error", "steal", "other"] as const).map((reason) => (
+                {(["hit", "error", "steal", "other", "balk"] as const).map((reason) => (
                   <button
                     key={reason}
                     type="button"
@@ -1011,21 +1053,19 @@ export function GameScorePanel({
 
       {isLive && isApprovedAdmin && (
         <div className="flex flex-col gap-2">
-          {isOurHalf && (
-            <div className="flex gap-2">
-              {(["single", "double", "triple", "home_run"] as const).map((hitType) => (
-                <button
-                  key={hitType}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => recordHit(hitType)}
-                  className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
-                >
-                  {t(`game.hit.${hitType}`)}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-2">
+            {(["single", "double", "triple", "home_run"] as const).map((hitType) => (
+              <button
+                key={hitType}
+                type="button"
+                disabled={loading}
+                onClick={() => recordHit(hitType)}
+                className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
+              >
+                {t(`game.hit.${hitType}`)}
+              </button>
+            ))}
+          </div>
 
           <div className="flex gap-2">
             {(

@@ -13,8 +13,8 @@ export type GameStatus = "scheduled" | "live" | "final" | "postponed" | "cancele
 export type AdminInviteStatus = "pending" | "accepted" | "revoked";
 export type EventVisibility = "public" | "private";
 export type TeamVisibility = "public" | "private";
-export type HitType = "single" | "double" | "triple" | "home_run";
-export type RunnerMoveReason = "hit" | "error" | "steal" | "other";
+export type HitType = "single" | "double" | "triple" | "home_run" | "hbp";
+export type RunnerMoveReason = "hit" | "error" | "steal" | "other" | "balk";
 
 type TableDef<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;

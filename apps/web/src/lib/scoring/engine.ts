@@ -222,13 +222,15 @@ export function applyAdvanceOpponentBatter(game: GameState, opponentLineup: stri
   return { ...game, current_opponent_batter_id: nextInOrder(opponentLineup, game.current_opponent_batter_id) };
 }
 
-export type HitType = "single" | "double" | "triple" | "home_run";
+export type HitType = "single" | "double" | "triple" | "home_run" | "hbp";
 
 // Mirrors record_batter_hit: single/double/triple place only the new
 // batter (existing runners are left exactly where they are -- real
 // advancement on a hit is situational, not a fixed rule); home_run scores
 // the batter and every occupied base (the one deterministic case) and
-// clears the diamond.
+// clears the diamond. hbp (hit by pitch) shares single's branch below --
+// the same force-cascade placement rule applies to a batter forced to
+// first by either a walk or a pitch.
 export function applyBatterHit(
   game: GameState,
   hitType: HitType,
@@ -274,8 +276,9 @@ export function applyBatterHit(
     next.runner_on_second = true;
     next.runner_on_second_player_id = batterId;
   } else {
-    // single: landing base (1st) forces anyone there to 2nd, cascading to
-    // 3rd (and home) as needed -- same shape as the walk's force cascade.
+    // single or hbp: landing base (1st) forces anyone there to 2nd,
+    // cascading to 3rd (and home) as needed -- same shape as the walk's
+    // force cascade.
     if (game.runner_on_first) {
       if (game.runner_on_second) {
         if (game.runner_on_third) runs += 1;

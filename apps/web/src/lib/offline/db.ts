@@ -29,14 +29,14 @@ export type OutboxAction =
   | { kind: "score_home_or_away"; gameId: string; value: "home" | "away" }
   | { kind: "score_advance_batter"; gameId: string }
   | { kind: "score_advance_opponent_batter"; gameId: string }
-  | { kind: "score_hit"; gameId: string; hitType: "single" | "double" | "triple" | "home_run" }
+  | { kind: "score_hit"; gameId: string; hitType: "single" | "double" | "triple" | "home_run" | "hbp" }
   | { kind: "score_set_batter"; gameId: string; playerId: string }
   | {
       kind: "score_move_runner";
       gameId: string;
       fromBase: "first" | "second" | "third";
       toBase: "second" | "third" | "home" | "out";
-      reason: "hit" | "error" | "steal" | "other";
+      reason: "hit" | "error" | "steal" | "other" | "balk";
     };
 
 interface OutboxRow {
