@@ -263,6 +263,11 @@
       "yes": "Yes, hit by pitch",
       "no": "No"
     },
+    "strikePrompt": {
+      "title": "What happened?",
+      "swingAndMiss": "Swing and a miss",
+      "foulBall": "Foul ball"
+    },
     "currentBatterPrompt": {
       "title": "What happened?",
       "replace": "Replace current hitter",

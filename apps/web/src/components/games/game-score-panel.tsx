@@ -148,6 +148,11 @@ export function GameScorePanel({
   // choice like the batter has) -- a single-step full-roster picker.
   const [pitcherPrompt, setPitcherPrompt] = useState(false);
 
+  // "+1 Strike" opens this instead of calling addCount directly -- a foul
+  // ball only counts as a strike below 2, so it needs its own event type
+  // rather than always mapping to "strike".
+  const [strikePrompt, setStrikePrompt] = useState(false);
+
   const opponentBatterIds = opponentLineup.map((o) => o.id);
 
   useEffect(() => {
@@ -400,7 +405,7 @@ export function GameScorePanel({
     }
   }
 
-  async function addCount(eventType: "ball" | "strike" | "out") {
+  async function addCount(eventType: "ball" | "strike" | "out" | "foul") {
     if (!game) return;
     setLoading(true);
     setError(null);
@@ -434,7 +439,7 @@ export function GameScorePanel({
   // Corrects a misclicked ball/strike/out without the +1 path's threshold
   // side effects (no walk, no strikeout-out, no inning advance) -- just
   // decrements that one counter, floored at 0 server-side.
-  async function removeCount(eventType: "ball" | "strike" | "out") {
+  async function removeCount(eventType: "ball" | "strike" | "out" | "foul") {
     if (!game) return;
     setLoading(true);
     setError(null);
@@ -858,6 +863,27 @@ export function GameScorePanel({
               }
               onPitchingNameClick={isApprovedAdmin && !isOurHalf ? () => setPitcherPrompt(true) : undefined}
               fielderPositions={fielderPositions}
+              cornerContent={
+                <div className="flex flex-col gap-0.5 text-[10px] font-medium text-slate-700">
+                  <span className="flex items-center gap-1">
+                    {t("game.outs")}:
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className={`h-2 w-2 rounded-full ${i < game.outs ? "bg-slate-900" : "bg-slate-300"}`}
+                      />
+                    ))}
+                  </span>
+                  <span>
+                    {t("game.count")}: {game.balls}-{game.strikes}
+                  </span>
+                  {pitchCount !== null && (
+                    <span>
+                      {t("game.pitchCountAbbrev")}: {String(pitchCount).padStart(2, "0")}
+                    </span>
+                  )}
+                </div>
+              }
             />
           ) : (
             <span className="text-slate-300">–</span>
@@ -873,28 +899,6 @@ export function GameScorePanel({
             </span>
           </div>
         </div>
-
-        {isLive && (
-          <div className="flex items-center justify-center gap-6 text-lg font-medium text-slate-700">
-            <span className="flex items-center gap-1.5">
-              {t("game.outs")}:
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className={`h-3 w-3 rounded-full ${i < game.outs ? "bg-slate-900" : "bg-slate-200"}`}
-                />
-              ))}
-            </span>
-            <span>
-              {t("game.count")}: {game.balls}-{game.strikes}
-            </span>
-            {pitchCount !== null && (
-              <span>
-                {t("game.pitchCountAbbrev")}: {String(pitchCount).padStart(2, "0")}
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {isLive && isApprovedAdmin && baseAction && (
@@ -1117,6 +1121,43 @@ export function GameScorePanel({
         </div>
       )}
 
+      {isLive && isApprovedAdmin && strikePrompt && (
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+          <p className="text-xs font-medium text-slate-500">{t("game.strikePrompt.title")}</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                addCount("strike");
+                setStrikePrompt(false);
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+            >
+              {t("game.strikePrompt.swingAndMiss")}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                addCount("foul");
+                setStrikePrompt(false);
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+            >
+              {t("game.strikePrompt.foulBall")}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStrikePrompt(false)}
+            className="self-start text-xs font-medium text-slate-500 underline"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
+
       {isLive && isApprovedAdmin && (
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
@@ -1159,7 +1200,7 @@ export function GameScorePanel({
                 <button
                   type="button"
                   disabled={loading}
-                  onClick={() => addCount(type)}
+                  onClick={() => (type === "strike" ? setStrikePrompt(true) : addCount(type))}
                   aria-label={`+1 ${label}`}
                   title={`+1 ${label}`}
                   className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-slate-50 disabled:opacity-50"

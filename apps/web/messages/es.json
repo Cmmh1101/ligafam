@@ -263,6 +263,11 @@
       "yes": "Sí, golpeado por el lanzamiento",
       "no": "No"
     },
+    "strikePrompt": {
+      "title": "¿Qué pasó?",
+      "swingAndMiss": "Swing y falló",
+      "foulBall": "Foul"
+    },
     "currentBatterPrompt": {
       "title": "¿Qué pasó?",
       "replace": "Reemplazar bateador actual",

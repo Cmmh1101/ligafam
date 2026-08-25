@@ -17,7 +17,7 @@ export type OutboxAction =
   | { kind: "rsvp_update"; eventId: string; playerId: string; status: string }
   | { kind: "chat_message"; teamId: string; body: string; clientId: string }
   | { kind: "snack_claim"; eventId: string; familyLinkId: string; item: string }
-  | { kind: "score_count"; gameId: string; eventType: "ball" | "strike" | "out"; delta: 1 | -1 }
+  | { kind: "score_count"; gameId: string; eventType: "ball" | "strike" | "out" | "foul"; delta: 1 | -1 }
   | { kind: "score_run"; gameId: string; scoringTeam: "us" | "opponent"; runs: 1 | -1 }
   | {
       kind: "score_base";

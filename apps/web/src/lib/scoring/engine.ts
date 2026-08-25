@@ -62,7 +62,7 @@ export function nextInOrder(orderedIds: string[], currentId: string | null): str
 
 export function applyCountEvent(
   game: GameState,
-  eventType: "ball" | "strike" | "out",
+  eventType: "ball" | "strike" | "out" | "foul",
   delta: 1 | -1,
   ourLineup: string[],
   opponentLineup: string[]
@@ -78,8 +78,8 @@ export function applyCountEvent(
     ((halfAtPaStart === "top" && game.home_or_away === "away") ||
       (halfAtPaStart === "bottom" && game.home_or_away === "home"));
 
-  // Pitch-count attribution -- ball/strike only, 'out' never touches it.
-  if (eventType === "ball" || eventType === "strike") {
+  // Pitch-count attribution -- ball/strike/foul only, 'out' never touches it.
+  if (eventType === "ball" || eventType === "strike" || eventType === "foul") {
     if (delta === 1) {
       if (game.home_or_away !== null) {
         if (weAreBatting) {
@@ -147,6 +147,11 @@ export function applyCountEvent(
         next.outs = game.outs + 1;
         paEnded = true;
       }
+    } else if (eventType === "foul") {
+      // Only counts as a strike below 2 -- never forces a 3rd strike/out
+      // on its own (real baseball's foul-bunt-with-2-strikes exception
+      // isn't modeled, matching record_count_event).
+      if (next.strikes < 2) next.strikes = game.strikes + 1;
     } else {
       next.balls = 0;
       next.strikes = 0;
@@ -184,6 +189,7 @@ export function applyCountEvent(
   } else {
     if (eventType === "ball") next.balls = Math.max(game.balls - 1, 0);
     else if (eventType === "strike") next.strikes = Math.max(game.strikes - 1, 0);
+    else if (eventType === "foul") next.strikes = Math.max(game.strikes - 1, 0);
     else next.outs = Math.max(game.outs - 1, 0);
   }
 

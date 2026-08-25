@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { PositionCode } from "@/lib/supabase/database.types";
 
@@ -55,8 +56,8 @@ function BaseMarker({
       aria-label={runnerName ? `${t(`game.base.${base}`)}: ${runnerName}` : t(`game.base.${base}`)}
       aria-pressed={occupied}
       style={position}
-      className={`absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 items-center justify-center border-2 ${
-        occupied ? "border-yellow-500 bg-yellow-400" : "border-slate-400 bg-white"
+      className={`absolute z-10 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 items-center justify-center border-2 ${
+        occupied ? "border-yellow-500 bg-yellow-400" : "border-slate-500 bg-white"
       } ${interactive ? "cursor-pointer" : "cursor-default"}`}
     >
       {runnerName && (
@@ -82,18 +83,20 @@ function FielderLabel({
   return (
     <div
       style={position}
-      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
+      className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
       title={t(`positions.${code}`)}
     >
       <span
         className={`rounded px-1 text-[9px] font-semibold ${
-          playerName ? "bg-slate-100 text-slate-700" : "text-slate-300"
+          playerName ? "bg-white/90 text-slate-700" : "bg-white/60 text-slate-400"
         }`}
       >
         {code}
       </span>
       {playerName && (
-        <span className="max-w-[3.5rem] truncate text-center text-[9px] text-slate-600">{playerName}</span>
+        <span className="max-w-[3.5rem] truncate rounded bg-white/90 px-1 text-center text-[9px] text-slate-600">
+          {playerName}
+        </span>
       )}
     </div>
   );
@@ -111,7 +114,8 @@ export function BaseDiamond({
   pitchingName,
   onBattingNameClick,
   onPitchingNameClick,
-  fielderPositions
+  fielderPositions,
+  cornerContent
 }: {
   runnerOnFirst: boolean;
   runnerOnSecond: boolean;
@@ -125,15 +129,20 @@ export function BaseDiamond({
   onBattingNameClick?: () => void;
   onPitchingNameClick?: () => void;
   fielderPositions?: Partial<Record<FielderPosition, string | null>>;
+  cornerContent?: ReactNode;
 }) {
   const interactive = !!onBaseClick;
 
   return (
     <div className="mx-auto flex flex-col items-center">
-      <div className="relative h-72 w-72">
-        {/* Diamond outline: same rotated-square shape as before, sized to
-            the sub-box spanning from the "2nd" corner down to home. */}
-        <div className="absolute left-[15%] top-[30.6%] h-[69.4%] w-[70%] rotate-45 rounded-sm border-2 border-slate-300" />
+      <div className="relative h-72 w-72 overflow-hidden rounded-2xl bg-green-200">
+        {/* Infield dirt: a larger filled diamond beneath the basepath
+            outline, same sub-box center, roughly 15% bigger on each side. */}
+        <div className="absolute left-[7%] top-[22.6%] z-0 h-[77.4%] w-[86%] rotate-45 rounded-sm bg-amber-100" />
+
+        {/* Basepath outline: same rotated-square shape/position as before
+            -- now reads as a chalk line against the dirt. */}
+        <div className="absolute left-[15%] top-[30.6%] z-0 h-[69.4%] w-[70%] rotate-45 rounded-sm border-2 border-white" />
 
         {(Object.keys(FIELDER_POSITIONS) as FielderPosition[]).map((code) => (
           <FielderLabel
@@ -172,26 +181,28 @@ export function BaseDiamond({
         {/* Pitcher's mound: center of the diamond sub-box. Tappable when
             onPitchingNameClick is provided (admin, live game), otherwise a
             plain label -- same shape as the batting name below. */}
-        <div className="absolute left-1/2 top-[65%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1">
-          <div className="h-3 w-3 rounded-full border-2 border-slate-300 bg-slate-100" />
+        <div className="absolute left-1/2 top-[65%] z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1">
+          <div className="h-3 w-3 rounded-full border-2 border-amber-300 bg-amber-50" />
           {pitchingName &&
             (onPitchingNameClick ? (
               <button
                 type="button"
                 onClick={onPitchingNameClick}
-                className="max-w-[4.5rem] truncate text-center text-[10px] font-medium text-slate-600 underline decoration-dotted"
+                className="max-w-[4.5rem] truncate rounded bg-white/90 px-1 text-center text-[10px] font-medium text-slate-600 underline decoration-dotted"
               >
                 {pitchingName}
               </button>
             ) : (
-              <span className="max-w-[4.5rem] truncate text-center text-[10px] font-medium text-slate-600">
+              <span className="max-w-[4.5rem] truncate rounded bg-white/90 px-1 text-center text-[10px] font-medium text-slate-600">
                 {pitchingName}
               </span>
             ))}
         </div>
 
         {/* Home plate: decorative only, not a toggleable base. */}
-        <div className="absolute bottom-0 left-1/2 h-5 w-5 -translate-x-1/2 translate-y-1/2 rotate-45 border-2 border-slate-400 bg-slate-100" />
+        <div className="absolute bottom-0 left-1/2 z-10 h-5 w-5 -translate-x-1/2 translate-y-1/2 rotate-45 border-2 border-slate-500 bg-white" />
+
+        {cornerContent && <div className="absolute bottom-1 left-1 z-10">{cornerContent}</div>}
       </div>
 
       {battingName &&
