@@ -771,6 +771,10 @@ export function GameScorePanel({
 
   const showBattingIndicator = game.home_or_away !== null;
 
+  const inningAriaLabel = game.inning_half
+    ? `${t(`game.${game.inning_half}` as "game.top" | "game.bottom")} · ${t("game.inning")} ${game.current_inning}`
+    : undefined;
+
   let battingDisplay: string | null = null;
   let pitchingDisplay: string | null = null;
   let pitchCount: number | null = null;
@@ -817,31 +821,50 @@ export function GameScorePanel({
         </p>
       )}
 
-      <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
-            {isLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />}
-            {t(`game.${game.status}` as "game.live" | "game.final" | "game.scheduled")}
-          </span>
-          {game.inning_half && (
-            <span className="text-xs text-slate-500">
-              {t(`game.${game.inning_half}` as "game.top" | "game.bottom")} · {t("game.inning")}{" "}
-              {game.current_inning}
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase text-slate-500">
+              {isLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />}
+              {t(`game.${game.status}` as "game.live" | "game.final" | "game.scheduled")}
             </span>
+
+            <div className="flex flex-col gap-0.5 text-sm font-semibold text-slate-900">
+              <div className="flex items-center gap-2">
+                {showBattingIndicator && isOurHalf && (
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" aria-label={t("game.battingNowLabel")} />
+                )}
+                <span className="min-w-0 flex-1 truncate font-normal text-slate-500">{t("game.us")}</span>
+                <span className="tabular-nums">{game.our_score}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {showBattingIndicator && !isOurHalf && (
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" aria-label={t("game.battingNowLabel")} />
+                )}
+                <span className="min-w-0 flex-1 truncate font-normal text-slate-500">{opponentLabel}</span>
+                <span className="tabular-nums">{game.opponent_score}</span>
+              </div>
+            </div>
+          </div>
+
+          {game.inning_half && (
+            <div className="flex shrink-0 items-center gap-1.5" aria-label={inningAriaLabel}>
+              <div className="flex flex-col items-center gap-0.5">
+                <div
+                  className="h-0 w-0 border-x-[5px] border-b-[7px] border-x-transparent"
+                  style={{ borderBottomColor: game.inning_half === "top" ? "#0f172a" : "#cbd5e1" }}
+                />
+                <div
+                  className="h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent"
+                  style={{ borderTopColor: game.inning_half === "bottom" ? "#0f172a" : "#cbd5e1" }}
+                />
+              </div>
+              <span className="text-lg font-bold text-slate-900">{game.current_inning}</span>
+            </div>
           )}
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-2xl font-semibold text-slate-900">
-          <div className="flex flex-col items-center">
-            <span>{game.our_score}</span>
-            <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
-              {showBattingIndicator && isOurHalf && (
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-label={t("game.battingNowLabel")} />
-              )}
-              {t("game.us")}
-            </span>
-          </div>
-
+        <div>
           {isLive ? (
             <BaseDiamond
               runnerOnFirst={game.runner_on_first}
@@ -899,16 +922,6 @@ export function GameScorePanel({
           ) : (
             <span className="text-slate-300">–</span>
           )}
-
-          <div className="flex flex-col items-center">
-            <span>{game.opponent_score}</span>
-            <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
-              {showBattingIndicator && !isOurHalf && (
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-label={t("game.battingNowLabel")} />
-              )}
-              {opponentLabel}
-            </span>
-          </div>
         </div>
       </div>
 

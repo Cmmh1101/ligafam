@@ -129,8 +129,8 @@ export function BaseDiamond({
   const interactive = !!onBaseClick;
 
   return (
-    <div className="mx-auto flex flex-col items-center">
-      <div className="relative h-72 w-72 overflow-hidden rounded-2xl bg-green-200">
+    <div className="mx-auto flex w-full flex-col items-center">
+      <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-2xl bg-green-200">
         {/* Infield dirt: a larger filled diamond beneath the basepath
             outline, same sub-box center, roughly 15% bigger on each side. */}
         <div className="absolute left-[7%] top-[22.6%] z-0 h-[77.4%] w-[86%] rotate-45 rounded-sm bg-amber-100" />
