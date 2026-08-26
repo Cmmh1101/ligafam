@@ -71,11 +71,11 @@ function BaseMarker({
 
 function FielderLabel({
   code,
-  playerName,
+  label,
   position
 }: {
   code: FielderPosition;
-  playerName?: string | null;
+  label?: string | null;
   position: { top: string; left: string };
 }) {
   const t = useTranslations();
@@ -83,21 +83,16 @@ function FielderLabel({
   return (
     <div
       style={position}
-      className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
+      className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
       title={t(`positions.${code}`)}
     >
       <span
         className={`rounded px-1 text-[9px] font-semibold ${
-          playerName ? "bg-white/90 text-slate-700" : "bg-white/60 text-slate-400"
+          label ? "bg-white/90 text-slate-700" : "bg-white/60 text-slate-400"
         }`}
       >
-        {code}
+        {label ?? code}
       </span>
-      {playerName && (
-        <span className="max-w-[3.5rem] truncate rounded bg-white/90 px-1 text-center text-[9px] text-slate-600">
-          {playerName}
-        </span>
-      )}
     </div>
   );
 }
@@ -148,7 +143,7 @@ export function BaseDiamond({
           <FielderLabel
             key={code}
             code={code}
-            playerName={fielderPositions?.[code]}
+            label={fielderPositions?.[code]}
             position={FIELDER_POSITIONS[code]}
           />
         ))}

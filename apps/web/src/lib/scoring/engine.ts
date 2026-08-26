@@ -265,22 +265,28 @@ export function applyBatterHit(
     next.runner_on_second_player_id = null;
     next.runner_on_third_player_id = null;
   } else if (hitType === "triple") {
-    // Landing base (3rd) forces anyone already there home; 1st/2nd
-    // untouched (no collision -- purely discretionary, left for
-    // applyMoveBaseRunner).
+    // Deterministic, same philosophy as home_run: every existing runner
+    // scores, batter lands on 3rd.
+    if (game.runner_on_first) runs += 1;
+    if (game.runner_on_second) runs += 1;
     if (game.runner_on_third) runs += 1;
+    next.runner_on_first = false;
+    next.runner_on_first_player_id = null;
+    next.runner_on_second = false;
+    next.runner_on_second_player_id = null;
     next.runner_on_third = true;
     next.runner_on_third_player_id = batterId;
   } else if (hitType === "double") {
-    // Landing base (2nd) forces anyone there to 3rd, cascading home if 3rd
-    // was also occupied. 1st untouched.
-    if (game.runner_on_second) {
-      if (game.runner_on_third) runs += 1;
-      next.runner_on_third = true;
-      next.runner_on_third_player_id = game.runner_on_second_player_id;
-    }
+    // 2nd and 3rd score outright; 1st advances exactly two bases, to 3rd
+    // (never colliding -- 2nd's occupant is already sent home above).
+    if (game.runner_on_second) runs += 1;
+    if (game.runner_on_third) runs += 1;
+    next.runner_on_first = false;
+    next.runner_on_first_player_id = null;
     next.runner_on_second = true;
     next.runner_on_second_player_id = batterId;
+    next.runner_on_third = game.runner_on_first;
+    next.runner_on_third_player_id = game.runner_on_first_player_id;
   } else {
     // single or hbp: landing base (1st) forces anyone there to 2nd,
     // cascading to 3rd (and home) as needed -- same shape as the walk's

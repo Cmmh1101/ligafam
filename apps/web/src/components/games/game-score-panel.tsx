@@ -317,6 +317,17 @@ export function GameScorePanel({
     return `${player.first_name} ${player.last_name}${player.jersey_number ? ` #${player.jersey_number}` : ""}`;
   }
 
+  // Compact "AL #7" form for the fielder badges on the field diagram --
+  // playerName() above stays the full-name form used everywhere else
+  // (base runners, batter, pitcher, all the pickers).
+  function playerInitials(id: string | null): string | null {
+    if (!id) return null;
+    const player = roster.find((p) => p.id === id);
+    if (!player) return null;
+    const initials = `${player.first_name[0] ?? ""}${player.last_name[0] ?? ""}`.toUpperCase();
+    return player.jersey_number ? `${initials} #${player.jersey_number}` : initials;
+  }
+
   function opponentBatterName(id: string | null): string | null {
     if (!id) return null;
     const batter = opponentLineup.find((o) => o.id === id);
@@ -787,7 +798,7 @@ export function GameScorePanel({
   const fielderPositions: Partial<Record<FielderPosition, string | null>> = {};
   for (const [playerId, position] of Object.entries(initialPositions)) {
     if (position && position !== "P") {
-      fielderPositions[position as FielderPosition] = playerName(playerId);
+      fielderPositions[position as FielderPosition] = playerInitials(playerId);
     }
   }
 
