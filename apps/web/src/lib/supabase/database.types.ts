@@ -461,6 +461,7 @@ export type Database = {
           created_at?: string;
         }
       >;
+      game_undo_state: TableDef<{ game_id: string }, { game_id: string }>;
       player_season_batting_stats: TableDef<
         {
           season_id: string;
@@ -601,6 +602,10 @@ export type Database = {
           p_to_base: "second" | "third" | "home" | "out";
           p_reason: RunnerMoveReason;
         };
+        Returns: Database["public"]["Tables"]["games"]["Row"];
+      };
+      undo_last_play: {
+        Args: { p_game_id: string };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       recalculate_season_record: { Args: { p_season_id: string }; Returns: undefined };

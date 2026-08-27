@@ -27,7 +27,8 @@ const RPC_ERROR_KEYS: Record<string, string> = {
   PLAYER_ALREADY_IN_LINEUP: "errors.playerAlreadyInLineup",
   NO_RUNNER_ON_BASE: "errors.noRunnerOnBase",
   INVALID_BASE: "errors.invalidBase",
-  INVALID_MOVE_REASON: "errors.invalidMoveReason"
+  INVALID_MOVE_REASON: "errors.invalidMoveReason",
+  NOTHING_TO_UNDO: "errors.nothingToUndo"
 };
 
 export function rpcErrorKey(message: string | undefined | null): string {

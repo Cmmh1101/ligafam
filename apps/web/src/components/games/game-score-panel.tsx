@@ -123,6 +123,7 @@ export function GameScorePanel({
   const [error, setError] = useState<string | null>(null);
   const [syncFailedCount, setSyncFailedCount] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [hasUndo, setHasUndo] = useState(false);
 
   // Base-diamond interaction: clicking an empty base (our half) opens a
   // "place" picker; clicking an occupied base opens the "move this runner"
@@ -167,17 +168,34 @@ export function GameScorePanel({
   const pendingCount =
     useLiveQuery(() => (mounted && game ? pendingScoreCount(game.id) : Promise.resolve(0)), [mounted, game?.id]) ?? 0;
 
+  // Whether the last cascading play (hit, walk/strikeout, runner move,
+  // substitution) can still be undone -- backed by the one-row-per-game
+  // game_undo_state table, not client state, so it stays correct across
+  // reloads and multiple admins on the same game.
+  async function refreshHasUndo(gameId: string) {
+    const { data } = await supabase.from("game_undo_state").select("game_id").eq("game_id", gameId).maybeSingle();
+    setHasUndo(!!data);
+  }
+
   // Filtered on event_id (not id) because a viewer who loaded this page
   // before the admin started the game has no game id yet to subscribe by --
   // event: "*" covers both the INSERT that start_game produces and every
-  // later UPDATE with a single channel.
+  // later UPDATE with a single channel. Every action that can create or
+  // consume an undo record also updates the games row, so re-checking
+  // hasUndo here (rather than after each individual action) covers all of
+  // them -- including substitute_lineup_player, which doesn't apply its
+  // own RPC result locally today.
   useEffect(() => {
     const channel = supabase
       .channel(`game-${eventId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "games", filter: `event_id=eq.${eventId}` },
-        (payload) => setGame(payload.new as Game)
+        (payload) => {
+          const updated = payload.new as Game;
+          setGame(updated);
+          refreshHasUndo(updated.id);
+        }
       )
       .subscribe();
 
@@ -186,6 +204,12 @@ export function GameScorePanel({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  useEffect(() => {
+    if (!game?.id) return;
+    refreshHasUndo(game.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id]);
 
   // game_opponent_lineup isn't itself realtime-published (its full list only
   // matters to the admin editing it on the Roster tab), but this component
@@ -641,6 +665,26 @@ export function GameScorePanel({
       return;
     }
     if (data) setGame(data as Game);
+  }
+
+  // Online-only, matching substitute_lineup_player -- undo reaching through
+  // the offline outbox is out of scope, and every action it can undo is
+  // already online-only or realtime-corrected.
+  async function undoLastPlay() {
+    if (!game) return;
+    setLoading(true);
+    setError(null);
+    const { data, error: undoError } = await supabase.rpc("undo_last_play", { p_game_id: game.id });
+    setLoading(false);
+    if (undoError) {
+      setError(t(rpcErrorKey(undoError.message)));
+      return;
+    }
+    if (data) {
+      setGame(data as Game);
+      setHasUndo(false);
+      addToast(t("game.undoSuccess"), "success");
+    }
   }
 
   async function finalizeGame() {
@@ -1320,6 +1364,17 @@ export function GameScorePanel({
               </button>
             )}
           </div>
+
+          {hasUndo && (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={undoLastPlay}
+              className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 disabled:opacity-50"
+            >
+              {t("game.undoLastPlay")}
+            </button>
+          )}
 
           <button
             type="button"

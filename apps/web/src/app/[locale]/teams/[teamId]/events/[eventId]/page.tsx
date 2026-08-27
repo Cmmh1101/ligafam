@@ -357,20 +357,18 @@ export default async function EventDetailPage({
               />
             }
             rosterContent={
-              <>
-                {rsvpSection}
-                {isApprovedAdmin && (
-                  <LineupSetup
-                    eventId={eventId}
-                    initialGame={game}
-                    roster={gameRoster}
-                    initialLineup={initialLineup}
-                    initialOpponentLineup={initialOpponentLineup}
-                    initialPositions={initialPositions}
-                  />
-                )}
-              </>
+              isApprovedAdmin && (
+                <LineupSetup
+                  eventId={eventId}
+                  initialGame={game}
+                  roster={gameRoster}
+                  initialLineup={initialLineup}
+                  initialOpponentLineup={initialOpponentLineup}
+                  initialPositions={initialPositions}
+                />
+              )
             }
+            attendanceContent={rsvpSection || null}
             statsContent={<GameStatsView eventId={eventId} gameId={game?.id ?? null} roster={gameRoster} />}
             snacksContent={snacksSection}
           />

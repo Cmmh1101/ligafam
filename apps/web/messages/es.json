@@ -232,7 +232,10 @@
     "noPitcherSelected": "Sin lanzador",
     "boardTab": "Marcador",
     "rosterTab": "Roster del partido",
+    "attendanceTab": "Asistencia",
     "snacksTab": "Refrigerios",
+    "undoLastPlay": "Deshacer última jugada",
+    "undoSuccess": "Última jugada deshecha",
     "opponentBatting": "Visitante",
     "opponentPitcherUnset": "Lanzador visitante",
     "addOpponentBatter": "+ Agregar bateador",
@@ -378,6 +381,7 @@
     "playerAlreadyInLineup": "Ese jugador ya está en la alineación",
     "noRunnerOnBase": "No hay corredor en esa base",
     "invalidBase": "Base inválida",
-    "invalidMoveReason": "Motivo inválido"
+    "invalidMoveReason": "Motivo inválido",
+    "nothingToUndo": "Nada que deshacer"
   }
 }

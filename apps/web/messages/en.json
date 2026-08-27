@@ -232,7 +232,10 @@
     "noPitcherSelected": "No pitcher selected",
     "boardTab": "Scoreboard",
     "rosterTab": "Game roster",
+    "attendanceTab": "Attendance",
     "snacksTab": "Snacks",
+    "undoLastPlay": "Undo last play",
+    "undoSuccess": "Last play undone",
     "opponentBatting": "Opponent",
     "opponentPitcherUnset": "Opponent pitcher",
     "addOpponentBatter": "+ Add batter",
@@ -378,6 +381,7 @@
     "playerAlreadyInLineup": "That player is already in the lineup",
     "noRunnerOnBase": "There's no runner on that base",
     "invalidBase": "Invalid base",
-    "invalidMoveReason": "Invalid reason"
+    "invalidMoveReason": "Invalid reason",
+    "nothingToUndo": "Nothing to undo"
   }
 }
