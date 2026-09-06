@@ -1,0 +1,15 @@
+-- ============================================================================
+-- LigaFam — Enable Realtime on game_lineup.
+--
+-- The field diagram on the Marcador tab renders fielder positions from a
+-- prop computed once at page load; the Roster tab's position pickers hold
+-- their own local optimistic state. Neither refreshes when a position
+-- changes elsewhere (a sibling row losing its position to the
+-- one-player-per-position rule, or another admin editing from a second
+-- device) -- both stay stuck showing the page-load snapshot until a full
+-- reload. Only public.games was ever added to the realtime publication
+-- (0007_live_scoring.sql); game_lineup needs the same treatment so the
+-- score panel can subscribe and refetch positions live, the same pattern
+-- already used for games.
+-- ============================================================================
+alter publication supabase_realtime add table public.game_lineup;

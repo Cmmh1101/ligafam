@@ -119,6 +119,7 @@ export function GameScorePanel({
 
   const [game, setGame] = useState<Game | null>(initialGame);
   const [opponentLineup, setOpponentLineup] = useState<OpponentBatter[]>(initialOpponentLineup);
+  const [positions, setPositions] = useState<Record<string, string | null>>(initialPositions);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncFailedCount, setSyncFailedCount] = useState<number | null>(null);
@@ -230,6 +231,37 @@ export function GameScorePanel({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game?.id, game?.current_opponent_batter_id]);
+
+  // Fielder positions on the field diagram used to be frozen at page-load
+  // time (the initialPositions prop) -- reassigning a position on the
+  // Roster tab, or another admin doing it from a second device, never
+  // showed up here without a full reload. game_lineup is now added to the
+  // Realtime publication (0029_lineup_realtime.sql), same as games, so
+  // this can subscribe directly instead of only reacting to a `games`
+  // signal the way the opponent lineup effect above has to.
+  async function refreshPositions(gameId: string) {
+    const { data } = await supabase.from("game_lineup").select("player_id, position").eq("game_id", gameId);
+    if (data) setPositions(Object.fromEntries(data.map((row) => [row.player_id, row.position])));
+  }
+
+  useEffect(() => {
+    if (!game?.id) return;
+    refreshPositions(game.id);
+
+    const channel = supabase
+      .channel(`game-lineup-${game.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "game_lineup", filter: `game_id=eq.${game.id}` },
+        () => refreshPositions(game.id)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.id]);
 
   // Replays one queued action for real against the server -- used both by
   // the reconnect-flush effect below.
@@ -844,7 +876,7 @@ export function GameScorePanel({
   // (see plan: the live "who's actually pitching" pointer vs. the static
   // "who's assigned where" roster plan never drift against each other).
   const fielderPositions: Partial<Record<FielderPosition, string | null>> = {};
-  for (const [playerId, position] of Object.entries(initialPositions)) {
+  for (const [playerId, position] of Object.entries(positions)) {
     if (position && position !== "P") {
       fielderPositions[position as FielderPosition] = playerInitials(playerId);
     }

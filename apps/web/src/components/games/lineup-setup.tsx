@@ -197,6 +197,41 @@ export function LineupSetup({
   const ourDrag = useDragReorder(ourLineup, setOurLineup);
   const opponentDrag = useDragReorder(opponentEntries, setOpponentEntries);
 
+  // Backstops the optimistic clear in setLineupPosition below -- catches a
+  // second admin editing this same game from another device, and corrects
+  // this client's own state if an RPC call above ends up failing after the
+  // optimistic update already ran. game_lineup is Realtime-published as of
+  // 0029_lineup_realtime.sql.
+  async function refreshPositions() {
+    if (!gameId) return;
+    const { data } = await supabase.from("game_lineup").select("player_id, position").eq("game_id", gameId);
+    if (!data) return;
+    setPositions((prev) => {
+      const next = { ...prev };
+      for (const row of data) {
+        next[row.player_id] = row.position ?? "";
+      }
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (!gameId) return;
+    const channel = supabase
+      .channel(`lineup-positions-${gameId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "game_lineup", filter: `game_id=eq.${gameId}` },
+        () => refreshPositions()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId]);
+
   if (!gameId) {
     return <p className="text-slate-600">{t("game.notStartedYet")}</p>;
   }
@@ -266,9 +301,21 @@ export function LineupSetup({
   // Same immediate-write shape as selectOurPitcher. Only works for a
   // player already saved into game_lineup -- a freshly-added-but-unsaved
   // lineup slot surfaces PLAYER_NOT_IN_LINEUP via the existing error
-  // path, same as any other RPC failure here.
+  // path, same as any other RPC failure here. set_lineup_position enforces
+  // one player per position server-side (0028_position_fixes_and_undo.sql)
+  // -- mirrored here so whichever row previously held `position` updates
+  // its own dropdown immediately instead of waiting on the realtime
+  // refetch below.
   async function setLineupPosition(playerId: string, position: string) {
-    setPositions((prev) => ({ ...prev, [playerId]: position }));
+    setPositions((prev) => {
+      const next = { ...prev, [playerId]: position };
+      if (position) {
+        for (const id of Object.keys(next)) {
+          if (id !== playerId && next[id] === position) next[id] = "";
+        }
+      }
+      return next;
+    });
     setLoading(true);
     setError(null);
     const { error: positionError } = await supabase.rpc("set_lineup_position", {
