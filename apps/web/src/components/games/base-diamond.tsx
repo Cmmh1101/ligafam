@@ -37,9 +37,9 @@ const HOME_PLATE_POSITION = { top: `${DIAMOND_CENTER.top + HALF_DIAGONAL_Y}%`, l
 
 const FIELDER_POSITIONS: Record<FielderPosition, { top: string; left: string }> = {
   C: { top: "88%", left: "50%" },
-  "1B": { top: "62%", left: "94%" },
+  "1B": { top: "47%", left: "76%" },
   "2B": { top: "28%", left: "64%" },
-  "3B": { top: "62%", left: "6%" },
+  "3B": { top: "47%", left: "24%" },
   SS: { top: "28%", left: "36%" },
   LF: { top: "8%", left: "20%" },
   CF: { top: "3%", left: "50%" },
@@ -112,8 +112,8 @@ function FielderLabel({
       title={t(`positions.${code}`)}
     >
       <span
-        className={`rounded px-1 text-[9px] font-semibold ${
-          label ? "bg-white/90 text-slate-700" : "bg-white/60 text-slate-400"
+        className={`rounded px-1.5 py-0.5 text-xs font-bold ${
+          label ? "bg-white/90 text-slate-900" : "bg-white/60 text-slate-500"
         }`}
       >
         {label ?? code}
