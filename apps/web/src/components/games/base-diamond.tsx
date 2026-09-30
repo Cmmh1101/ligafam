@@ -37,9 +37,9 @@ const HOME_PLATE_POSITION = { top: `${DIAMOND_CENTER.top + HALF_DIAGONAL_Y}%`, l
 
 const FIELDER_POSITIONS: Record<FielderPosition, { top: string; left: string }> = {
   C: { top: "88%", left: "50%" },
-  "1B": { top: "47%", left: "76%" },
+  "1B": { top: "41%", left: "81%" },
   "2B": { top: "28%", left: "64%" },
-  "3B": { top: "47%", left: "24%" },
+  "3B": { top: "41%", left: "19%" },
   SS: { top: "28%", left: "36%" },
   LF: { top: "8%", left: "20%" },
   CF: { top: "3%", left: "50%" },
@@ -155,10 +155,16 @@ export function BaseDiamond({
 
   return (
     <div className="mx-auto flex w-full flex-col items-center">
-      <div className="relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-2xl bg-green-300">
+      <div
+        className="relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-2xl"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(90deg, #15803d 0px, #15803d 28px, #16a34a 28px, #16a34a 56px)"
+        }}
+      >
         {/* Infield dirt: a bigger rotated square, same center as the
             basepath, sized/positioned from the same diamond math above. */}
-        <div className="absolute left-[15%] top-[21%] z-0 h-[56%] w-[70%] rotate-45 rounded-sm bg-amber-200" />
+        <div className="absolute left-[15%] top-[21%] z-0 h-[56%] w-[70%] rotate-45 rounded-sm bg-amber-300" />
 
         {/* Basepath outline: the actual square the corner math is derived
             from -- reads as a chalk line against the dirt. */}
