@@ -219,12 +219,12 @@ export function BaseDiamond({
               <button
                 type="button"
                 onClick={onPitchingNameClick}
-                className="max-w-[4.5rem] truncate rounded bg-white/90 px-1 text-center text-[10px] font-medium text-slate-600 underline decoration-dotted"
+                className="max-w-[6rem] truncate rounded bg-white/90 px-1.5 py-0.5 text-center text-xs font-semibold text-slate-700 underline decoration-dotted"
               >
                 {pitchingName}
               </button>
             ) : (
-              <span className="max-w-[4.5rem] truncate rounded bg-white/90 px-1 text-center text-[10px] font-medium text-slate-600">
+              <span className="max-w-[6rem] truncate rounded bg-white/90 px-1.5 py-0.5 text-center text-xs font-semibold text-slate-700">
                 {pitchingName}
               </span>
             ))}
@@ -246,12 +246,12 @@ export function BaseDiamond({
           <button
             type="button"
             onClick={onBattingNameClick}
-            className="mt-3 max-w-[9rem] truncate text-center text-xs font-semibold text-slate-800 underline decoration-dotted"
+            className="mt-3 max-w-[10rem] truncate text-center text-sm font-bold text-slate-900 underline decoration-dotted"
           >
             {battingName}
           </button>
         ) : (
-          <span className="mt-3 max-w-[9rem] truncate text-center text-xs font-semibold text-slate-800">
+          <span className="mt-3 max-w-[10rem] truncate text-center text-sm font-bold text-slate-900">
             {battingName}
           </span>
         ))}

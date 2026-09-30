@@ -974,13 +974,13 @@ export function GameScorePanel({
               onPitchingNameClick={isApprovedAdmin && !isOurHalf ? () => setPitcherPrompt(true) : undefined}
               fielderPositions={fielderPositions}
               cornerContent={
-                <div className="flex flex-col gap-0.5 text-[10px] font-medium text-slate-700">
-                  <span className="flex items-center gap-1">
+                <div className="flex flex-col gap-1 rounded-lg bg-white/90 px-2 py-1.5 text-sm font-bold text-slate-900">
+                  <span className="flex items-center gap-1.5">
                     {t("game.outs")}:
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
-                        className={`h-2 w-2 rounded-full ${i < game.outs ? "bg-slate-900" : "bg-slate-300"}`}
+                        className={`h-3.5 w-3.5 rounded-full ${i < game.outs ? "bg-slate-900" : "bg-slate-300"}`}
                       />
                     ))}
                   </span>
