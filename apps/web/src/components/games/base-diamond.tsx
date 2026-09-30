@@ -7,28 +7,43 @@ import type { PositionCode } from "@/lib/supabase/database.types";
 type Base = "first" | "second" | "third";
 export type FielderPosition = Exclude<PositionCode, "P">;
 
-// Percent-of-canvas coordinates. The diamond (2nd/1st/3rd/home) keeps the
-// exact same relative shape the old 160x160 box used -- a square rotated
-// 45deg, corners at the midpoints of its own bounding box -- just scaled up
-// and shifted into the lower ~70% of the new, bigger canvas so there's room
-// for the outfield above it. Fielder spots are offset out from their base
-// (a fielder stands near, not on, the bag) rather than reusing the base's
-// own coordinates.
+// Canvas is a portrait rectangle (4:5), not a square -- a square canvas
+// left no vertical room for outfield above 2nd base and clearance below
+// home plate, so home plate got clipped by the canvas's own overflow-hidden
+// edge. All geometry below is derived from one square (the basepath, before
+// its 45deg rotation) rather than each base/home-plate/dirt-patch carrying
+// its own eyeballed position -- that's what made the diamond read as
+// slightly lopsided rather than a true, symmetric diamond.
+//
+// The math: a square of side S, rotated 45deg, reaches S*0.7071 from its
+// own center to each corner (the base/home-plate points). Because the
+// canvas is taller than it is wide (width W, height 1.25*W), that same
+// pixel reach is a smaller percentage of height than of width -- computed
+// once here as CANVAS_W_OVER_H -- which is exactly what buys the vertical
+// clearance a square canvas didn't have.
+const CANVAS_W_OVER_H = 4 / 5;
+const DIAMOND_SIDE_PCT = 58; // basepath square's side, as % of canvas width
+const DIAMOND_CENTER: { top: number; left: number } = { top: 49, left: 50 };
+const HALF_DIAGONAL_X = DIAMOND_SIDE_PCT * 0.7071; // % of width
+const HALF_DIAGONAL_Y = DIAMOND_SIDE_PCT * 0.7071 * CANVAS_W_OVER_H; // % of height
+
 const BASE_POSITIONS: Record<Base, { top: string; left: string }> = {
-  second: { top: "31%", left: "50%" },
-  first: { top: "65%", left: "85%" },
-  third: { top: "65%", left: "15%" }
+  second: { top: `${DIAMOND_CENTER.top - HALF_DIAGONAL_Y}%`, left: `${DIAMOND_CENTER.left}%` },
+  first: { top: `${DIAMOND_CENTER.top}%`, left: `${DIAMOND_CENTER.left + HALF_DIAGONAL_X}%` },
+  third: { top: `${DIAMOND_CENTER.top}%`, left: `${DIAMOND_CENTER.left - HALF_DIAGONAL_X}%` }
 };
+
+const HOME_PLATE_POSITION = { top: `${DIAMOND_CENTER.top + HALF_DIAGONAL_Y}%`, left: `${DIAMOND_CENTER.left}%` };
 
 const FIELDER_POSITIONS: Record<FielderPosition, { top: string; left: string }> = {
   C: { top: "88%", left: "50%" },
-  "1B": { top: "58%", left: "90%" },
-  "2B": { top: "42%", left: "64%" },
-  "3B": { top: "58%", left: "10%" },
-  SS: { top: "42%", left: "36%" },
-  LF: { top: "10%", left: "18%" },
-  CF: { top: "4%", left: "50%" },
-  RF: { top: "10%", left: "82%" }
+  "1B": { top: "62%", left: "94%" },
+  "2B": { top: "28%", left: "64%" },
+  "3B": { top: "62%", left: "6%" },
+  SS: { top: "28%", left: "36%" },
+  LF: { top: "8%", left: "20%" },
+  CF: { top: "3%", left: "50%" },
+  RF: { top: "8%", left: "80%" }
 };
 
 function BaseMarker({
@@ -56,12 +71,22 @@ function BaseMarker({
       aria-label={runnerName ? `${t(`game.base.${base}`)}: ${runnerName}` : t(`game.base.${base}`)}
       aria-pressed={occupied}
       style={position}
-      className={`absolute z-10 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 rotate-45 items-center justify-center border-2 ${
-        occupied ? "border-yellow-500 bg-yellow-400" : "border-slate-500 bg-white"
-      } ${interactive ? "cursor-pointer" : "cursor-default"}`}
+      className={`absolute z-10 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center ${
+        interactive ? "cursor-pointer" : "cursor-default"
+      }`}
     >
+      {/* Runner indicator: a round dot layered behind the bag, not the bag
+          itself turning into a solid block -- reads as "someone's here"
+          without dominating the diamond. */}
+      {occupied && <span className="absolute h-5 w-5 rounded-full bg-amber-400/90" />}
+      {/* The bag: a small rotated square, same shape a real base is. */}
+      <span
+        className={`relative h-4 w-4 rotate-45 border-2 ${
+          occupied ? "border-amber-600 bg-white" : "border-slate-400 bg-white"
+        }`}
+      />
       {runnerName && (
-        <span className="absolute w-14 -rotate-45 truncate text-center text-[9px] font-semibold text-slate-800">
+        <span className="absolute top-full mt-0.5 w-14 truncate text-center text-[9px] font-semibold text-slate-800">
           {runnerName}
         </span>
       )}
@@ -130,14 +155,22 @@ export function BaseDiamond({
 
   return (
     <div className="mx-auto flex w-full flex-col items-center">
-      <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-2xl bg-green-200">
-        {/* Infield dirt: a larger filled diamond beneath the basepath
-            outline, same sub-box center, roughly 15% bigger on each side. */}
-        <div className="absolute left-[7%] top-[22.6%] z-0 h-[77.4%] w-[86%] rotate-45 rounded-sm bg-amber-100" />
+      <div className="relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-2xl bg-green-300">
+        {/* Infield dirt: a bigger rotated square, same center as the
+            basepath, sized/positioned from the same diamond math above. */}
+        <div className="absolute left-[15%] top-[21%] z-0 h-[56%] w-[70%] rotate-45 rounded-sm bg-amber-200" />
 
-        {/* Basepath outline: same rotated-square shape/position as before
-            -- now reads as a chalk line against the dirt. */}
-        <div className="absolute left-[15%] top-[30.6%] z-0 h-[69.4%] w-[70%] rotate-45 rounded-sm border-2 border-white" />
+        {/* Basepath outline: the actual square the corner math is derived
+            from -- reads as a chalk line against the dirt. */}
+        <div
+          className="absolute z-0 rotate-45 rounded-sm border-2 border-white"
+          style={{
+            left: `${DIAMOND_CENTER.left - DIAMOND_SIDE_PCT / 2}%`,
+            top: `${DIAMOND_CENTER.top - (DIAMOND_SIDE_PCT * CANVAS_W_OVER_H) / 2}%`,
+            width: `${DIAMOND_SIDE_PCT}%`,
+            height: `${DIAMOND_SIDE_PCT * CANVAS_W_OVER_H}%`
+          }}
+        />
 
         {(Object.keys(FIELDER_POSITIONS) as FielderPosition[]).map((code) => (
           <FielderLabel
@@ -173,11 +206,14 @@ export function BaseDiamond({
           position={BASE_POSITIONS.third}
         />
 
-        {/* Pitcher's mound: center of the diamond sub-box. Tappable when
+        {/* Pitcher's mound: center of the diamond. Tappable when
             onPitchingNameClick is provided (admin, live game), otherwise a
             plain label -- same shape as the batting name below. */}
-        <div className="absolute left-1/2 top-[65%] z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1">
-          <div className="h-3 w-3 rounded-full border-2 border-amber-300 bg-amber-50" />
+        <div
+          className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
+          style={{ left: `${DIAMOND_CENTER.left}%`, top: `${DIAMOND_CENTER.top}%` }}
+        >
+          <div className="h-3.5 w-3.5 rounded-full border-2 border-amber-500 bg-amber-100" />
           {pitchingName &&
             (onPitchingNameClick ? (
               <button
@@ -194,8 +230,13 @@ export function BaseDiamond({
             ))}
         </div>
 
-        {/* Home plate: decorative only, not a toggleable base. */}
-        <div className="absolute bottom-0 left-1/2 z-10 h-5 w-5 -translate-x-1/2 translate-y-1/2 rotate-45 border-2 border-slate-500 bg-white" />
+        {/* Home plate: decorative only, not a toggleable base. Its own
+            vertex position already leaves clearance below (down to the
+            catcher's spot at 88%) so it never touches the canvas edge. */}
+        <div
+          className="absolute z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-2 border-slate-500 bg-white"
+          style={HOME_PLATE_POSITION}
+        />
 
         {cornerContent && <div className="absolute bottom-1 left-1 z-10">{cornerContent}</div>}
       </div>

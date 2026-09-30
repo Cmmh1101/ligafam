@@ -6,7 +6,7 @@ import { JoinTeamForm } from "@/components/teams/join-team-form";
 export default async function JoinTeamPage({
   searchParams
 }: {
-  searchParams: Promise<{ teamId?: string; teamName?: string }>;
+  searchParams: Promise<{ teamId?: string; teamName?: string; code?: string }>;
 }) {
   const locale = await getLocale();
   const supabase = await createClient();
@@ -19,7 +19,7 @@ export default async function JoinTeamPage({
   }
 
   const t = await getTranslations();
-  const { teamId, teamName } = await searchParams;
+  const { teamId, teamName, code } = await searchParams;
   const initialTeam = teamId && teamName ? { id: teamId, name: teamName } : undefined;
 
   return (
@@ -28,7 +28,7 @@ export default async function JoinTeamPage({
         {t("common.back")}
       </a>
       <h1 className="text-xl font-semibold text-slate-900">{t("team.joinTeam")}</h1>
-      <JoinTeamForm initialTeam={initialTeam} />
+      <JoinTeamForm initialTeam={initialTeam} initialCode={initialTeam ? undefined : code} />
     </main>
   );
 }

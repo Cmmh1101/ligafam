@@ -6,6 +6,7 @@ import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { ActionButton } from "@/components/action-button";
 import { InviteAdminForm } from "@/components/teams/invite-admin-form";
 import { TeamLogo } from "@/components/teams/team-logo";
+import { ShareTeamButton } from "@/components/teams/share-team-button";
 import { approveRequestAction, rejectRequestAction, removeAdminAction } from "./actions";
 import { createAdminInviteAction, revokeAdminInviteAction } from "./admin-invite/actions";
 
@@ -251,10 +252,13 @@ export default async function TeamPage({
 
       {error && <p className="text-sm text-red-600">{t(error)}</p>}
 
-      <div className="rounded-lg border border-slate-200 px-4 py-3">
-        <p className="text-xs font-medium text-slate-500">{t("team.inviteCode")}</p>
-        <p className="font-mono text-lg text-slate-900">{team.invite_code}</p>
-        <p className="text-xs text-slate-500">{t("team.inviteCodeHint")}</p>
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 px-4 py-3">
+        <ShareTeamButton teamName={team.name} joinUrl={`${origin}/${locale}/teams/join?code=${team.invite_code}`} />
+        <div>
+          <p className="text-xs font-medium text-slate-500">{t("team.inviteCode")}</p>
+          <p className="font-mono text-lg text-slate-900">{team.invite_code}</p>
+          <p className="text-xs text-slate-500">{t("team.inviteCodeHint")}</p>
+        </div>
       </div>
 
       {isApprovedMember && (

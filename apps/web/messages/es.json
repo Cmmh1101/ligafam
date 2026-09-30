@@ -79,6 +79,9 @@
     "fields": {
       "visibility": "Visibilidad"
     },
+    "shareTeam": "Compartir equipo",
+    "shareTitle": "Únete a {teamName} en LigaFam",
+    "shareMessage": "Únete a {teamName} en LigaFam — toca el enlace para registrarte:",
     "inviteCode": "Código de invitación",
     "inviteCodeHint": "Comparte este código con familias y aficionados para que se unan",
     "enterInviteCode": "Código de invitación",
@@ -333,6 +336,7 @@
     "nudgeDismiss": "Cerrar"
   },
   "toast": {
+    "linkCopied": "Enlace copiado",
     "lineupSaved": "Orden al bate guardado",
     "opponentLineupSaved": "Orden al bate rival guardado",
     "playerAdded": "Jugador agregado",

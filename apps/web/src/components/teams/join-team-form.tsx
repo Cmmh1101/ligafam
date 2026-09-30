@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -16,14 +16,20 @@ type RosterPlayer = {
   jersey_number: string | null;
 };
 
-export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name: string } }) {
+export function JoinTeamForm({
+  initialTeam,
+  initialCode
+}: {
+  initialTeam?: { id: string; name: string };
+  initialCode?: string;
+}) {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
   const supabase = createClient();
 
   const [step, setStep] = useState<Step>(initialTeam ? "role" : "code");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(initialCode ?? "");
   const [role, setRole] = useState<Role>("family");
   const [teamId, setTeamId] = useState<string | null>(initialTeam?.id ?? null);
   const [teamName, setTeamName] = useState(initialTeam?.name ?? "");
@@ -39,12 +45,9 @@ export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name
     ? { p_team_id: initialTeam.id }
     : { p_invite_code: inviteCode.trim() };
 
-  async function submitCode(e: FormEvent) {
-    e.preventDefault();
+  async function resolveCode(code: string) {
     setLoading(true);
     setError(null);
-
-    const code = inviteCode.trim();
 
     const { data: teamRows, error: teamError } = await supabase.rpc("get_joinable_team", {
       p_invite_code: code
@@ -64,6 +67,19 @@ export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name
     setTeamId(teamRows[0].id);
     setStep("role");
   }
+
+  function submitCode(e: FormEvent) {
+    e.preventDefault();
+    resolveCode(inviteCode.trim());
+  }
+
+  // A shared "Share team" link (?code=XXXX) lands here already carrying a
+  // code -- skip straight past the "enter code" step instead of making the
+  // person retype what they just tapped through.
+  useEffect(() => {
+    if (initialCode) resolveCode(initialCode.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCode]);
 
   async function continueFromRole() {
     setLoading(true);
@@ -237,6 +253,13 @@ export function JoinTeamForm({ initialTeam }: { initialTeam?: { id: string; name
         )}
       </div>
     );
+  }
+
+  // A code arriving via a shared link resolves itself (the effect above) --
+  // show a brief loading state instead of the manual-entry form so a tap on
+  // a share link doesn't flash a form the person never needs to touch.
+  if (initialCode && loading && !error) {
+    return <p className="text-slate-600">{t("common.loading")}</p>;
   }
 
   return (

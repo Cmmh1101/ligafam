@@ -79,6 +79,9 @@
     "fields": {
       "visibility": "Visibility"
     },
+    "shareTeam": "Share team",
+    "shareTitle": "Join {teamName} on LigaFam",
+    "shareMessage": "Join {teamName} on LigaFam — tap the link to sign up:",
     "inviteCode": "Invite code",
     "inviteCodeHint": "Share this code with family and fans so they can join",
     "enterInviteCode": "Invite code",
@@ -333,6 +336,7 @@
     "nudgeDismiss": "Dismiss"
   },
   "toast": {
+    "linkCopied": "Link copied",
     "lineupSaved": "Batting order saved",
     "opponentLineupSaved": "Opponent batting order saved",
     "playerAdded": "Player added",
