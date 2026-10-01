@@ -888,10 +888,18 @@ export function GameScorePanel({
   // own marker stays driven by current_pitcher_player_id, not this map
   // (see plan: the live "who's actually pitching" pointer vs. the static
   // "who's assigned where" roster plan never drift against each other).
+  // Only shown while we're actually the team on defense (!isOurHalf) --
+  // our assigned positions mean nothing while we're batting, since the
+  // OPPONENT is fielding then. Showing our names on the field during our
+  // own at-bat made it look like one team was both hitting and fielding;
+  // the diagram falls back to bare position codes (no names) the rest of
+  // the time, matching how the pitcher/batter name swap already works.
   const fielderPositions: Partial<Record<FielderPosition, string | null>> = {};
-  for (const [playerId, position] of Object.entries(positions)) {
-    if (position && position !== "P") {
-      fielderPositions[position as FielderPosition] = playerInitials(playerId);
+  if (!isOurHalf) {
+    for (const [playerId, position] of Object.entries(positions)) {
+      if (position && position !== "P") {
+        fielderPositions[position as FielderPosition] = playerInitials(playerId);
+      }
     }
   }
 
