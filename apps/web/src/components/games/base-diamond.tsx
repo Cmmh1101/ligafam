@@ -37,9 +37,9 @@ const HOME_PLATE_POSITION = { top: `${DIAMOND_CENTER.top + HALF_DIAGONAL_Y}%`, l
 
 const FIELDER_POSITIONS: Record<FielderPosition, { top: string; left: string }> = {
   C: { top: "88%", left: "50%" },
-  "1B": { top: "41%", left: "81%" },
+  "1B": { top: "44%", left: "85%" },
   "2B": { top: "28%", left: "64%" },
-  "3B": { top: "41%", left: "19%" },
+  "3B": { top: "44%", left: "15%" },
   SS: { top: "28%", left: "36%" },
   LF: { top: "8%", left: "20%" },
   CF: { top: "3%", left: "50%" },
@@ -159,7 +159,7 @@ export function BaseDiamond({
         className="relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-2xl"
         style={{
           backgroundImage:
-            "repeating-linear-gradient(90deg, #15803d 0px, #15803d 28px, #16a34a 28px, #16a34a 56px)"
+            "repeating-linear-gradient(45deg, #15803d 0px, #15803d 28px, #16a34a 28px, #16a34a 56px)"
         }}
       >
         {/* Infield dirt: a bigger rotated square, same center as the

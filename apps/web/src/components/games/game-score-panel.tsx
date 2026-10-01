@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
@@ -156,6 +156,19 @@ export function GameScorePanel({
   const [strikePrompt, setStrikePrompt] = useState(false);
 
   const opponentBatterIds = opponentLineup.map((o) => o.id);
+
+  // A tap that opens one of the four prompts below (baseAction,
+  // batterPrompt, pitcherPrompt, strikePrompt) can look like it silently
+  // did nothing -- the prompt renders below the field diagram, easy to
+  // miss mid-game. Scrolling it into view the moment it appears, on top of
+  // the highlighted border those prompts already get, makes it obvious
+  // there's a follow-up question waiting.
+  const promptRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (baseAction || batterPrompt || pitcherPrompt || strikePrompt) {
+      promptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [baseAction, batterPrompt, pitcherPrompt, strikePrompt]);
 
   useEffect(() => {
     setMounted(true);
@@ -1002,7 +1015,10 @@ export function GameScorePanel({
       </div>
 
       {isLive && isApprovedAdmin && baseAction && (
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+        <div
+          ref={promptRef}
+          className="flex flex-col gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+        >
           {baseAction.kind === "hbp-prompt" && (
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.hbpPrompt.title")}</p>
@@ -1111,7 +1127,10 @@ export function GameScorePanel({
       )}
 
       {isLive && isApprovedAdmin && batterPrompt && (
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+        <div
+          ref={promptRef}
+          className="flex flex-col gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+        >
           {batterPrompt === "choose" && (
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.currentBatterPrompt.title")}</p>
@@ -1193,7 +1212,10 @@ export function GameScorePanel({
       )}
 
       {isLive && isApprovedAdmin && pitcherPrompt && (
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+        <div
+          ref={promptRef}
+          className="flex flex-col gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+        >
           <p className="text-xs font-medium text-slate-500">{t("game.pitcherPrompt.title")}</p>
           <div className="flex flex-wrap gap-2">
             {roster.map((p) => (
@@ -1222,7 +1244,10 @@ export function GameScorePanel({
       )}
 
       {isLive && isApprovedAdmin && strikePrompt && (
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-300 p-3">
+        <div
+          ref={promptRef}
+          className="flex flex-col gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+        >
           <p className="text-xs font-medium text-slate-500">{t("game.strikePrompt.title")}</p>
           <div className="flex flex-wrap gap-2">
             <button
