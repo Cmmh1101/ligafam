@@ -164,6 +164,12 @@ export function GameScorePanel({
   // rather than always mapping to "strike".
   const [strikePrompt, setStrikePrompt] = useState(false);
 
+  // Home/away decides who bats each half, so flipping it mid-game silently
+  // re-assigns the current half (and credits outs to the wrong lineup).
+  // Switching after it's set goes through a confirmation instead of a
+  // single tap.
+  const [sideChange, setSideChange] = useState<"home" | "away" | null>(null);
+
   // Single/double with runners who could score: asks where each runner
   // actually ended up before the hit is recorded, instead of scoring them
   // automatically. Preselected with the old automatic outcome, so the
@@ -183,11 +189,12 @@ export function GameScorePanel({
   // the highlighted border those prompts already get, makes it obvious
   // there's a follow-up question waiting.
   const promptRef = useRef<HTMLDivElement | null>(null);
+  const needsSidePrompt = isApprovedAdmin && game?.status === "live" && game.home_or_away === null;
   useEffect(() => {
-    if (baseAction || batterPrompt || pitcherPrompt || strikePrompt || hitPrompt) {
+    if (baseAction || batterPrompt || pitcherPrompt || strikePrompt || hitPrompt || sideChange || needsSidePrompt) {
       promptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [baseAction, batterPrompt, pitcherPrompt, strikePrompt, hitPrompt]);
+  }, [baseAction, batterPrompt, pitcherPrompt, strikePrompt, hitPrompt, sideChange, needsSidePrompt]);
 
   useEffect(() => {
     setMounted(true);
@@ -1418,12 +1425,40 @@ export function GameScorePanel({
 
       {isLive && isApprovedAdmin && (
         <div className="flex flex-col gap-2">
+          {game.home_or_away === null && (
+            <div
+              ref={promptRef}
+              className="flex flex-col gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+            >
+              <p className="text-sm font-semibold text-slate-800">{t("game.sidePrompt.title")}</p>
+              <p className="text-xs text-slate-600">{t("game.sidePrompt.hint")}</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setHomeOrAway("away")}
+                  className="flex-1 rounded-lg bg-slate-900 px-3 py-3 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {t("game.sidePrompt.away")}
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => setHomeOrAway("home")}
+                  className="flex-1 rounded-lg bg-slate-900 px-3 py-3 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {t("game.sidePrompt.home")}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
             {(["single", "double", "triple", "home_run"] as const).map((hitType) => (
               <button
                 key={hitType}
                 type="button"
-                disabled={loading}
+                disabled={loading || game.home_or_away === null}
                 onClick={() => startHit(hitType)}
                 className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
               >
@@ -1457,7 +1492,7 @@ export function GameScorePanel({
                 <span className="text-sm font-medium text-slate-700">{label}</span>
                 <button
                   type="button"
-                  disabled={loading}
+                  disabled={loading || game.home_or_away === null}
                   onClick={() => (type === "strike" ? setStrikePrompt(true) : addCount(type))}
                   aria-label={`+1 ${label}`}
                   title={`+1 ${label}`}
@@ -1505,32 +1540,61 @@ export function GameScorePanel({
             ))}
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => setHomeOrAway("home")}
-              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${
-                game.home_or_away === "home"
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-300 text-slate-700"
-              }`}
-            >
-              {t("game.home")}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => setHomeOrAway("away")}
-              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${
-                game.home_or_away === "away"
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-300 text-slate-700"
-              }`}
-            >
-              {t("game.away")}
-            </button>
-          </div>
+          {game.home_or_away !== null && (
+            <>
+              <div className="flex gap-2">
+                {(["home", "away"] as const).map((side) => (
+                  <button
+                    key={side}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      if (game.home_or_away !== side) setSideChange(side);
+                    }}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${
+                      game.home_or_away === side
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    {t(`game.${side}`)}
+                  </button>
+                ))}
+              </div>
+
+              {sideChange && (
+                <div
+                  ref={promptRef}
+                  className="flex flex-col gap-2 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+                >
+                  <p className="text-sm font-semibold text-slate-800">
+                    {t("game.sideChange.title", { side: t(`game.${sideChange}`) })}
+                  </p>
+                  <p className="text-xs text-slate-600">{t("game.sideChange.hint")}</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        setHomeOrAway(sideChange);
+                        setSideChange(null);
+                      }}
+                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    >
+                      {t("game.sideChange.confirm")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSideChange(null)}
+                      className="text-xs font-medium text-slate-500 underline"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           <div className="flex gap-2">
             {game.current_batter_player_id !== null && (

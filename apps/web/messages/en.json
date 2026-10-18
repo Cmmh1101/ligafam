@@ -276,6 +276,17 @@
       "confirm": "Confirm",
       "invalid": "Two runners can't be on the same base"
     },
+    "sidePrompt": {
+      "title": "Are we home or visitors?",
+      "hint": "Visitors bat first (top of each inning); home bats second. Choose before scoring.",
+      "away": "Visitors (we bat first)",
+      "home": "Home (we bat second)"
+    },
+    "sideChange": {
+      "title": "Switch to {side}?",
+      "hint": "This changes who is batting right now. Only switch if it was set wrong.",
+      "confirm": "Yes, switch"
+    },
     "strikePrompt": {
       "title": "What happened?",
       "swingAndMiss": "Swing and a miss",

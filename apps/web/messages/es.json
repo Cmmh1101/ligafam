@@ -276,6 +276,17 @@
       "confirm": "Confirmar",
       "invalid": "Dos corredores no pueden estar en la misma base"
     },
+    "sidePrompt": {
+      "title": "¿Somos locales o visitantes?",
+      "hint": "El visitante batea primero (parte alta de cada entrada); el local batea segundo. Elige antes de anotar.",
+      "away": "Visitante (bateamos primero)",
+      "home": "Local (bateamos segundo)"
+    },
+    "sideChange": {
+      "title": "¿Cambiar a {side}?",
+      "hint": "Esto cambia quién está al bate ahora. Cámbialo solo si estaba mal.",
+      "confirm": "Sí, cambiar"
+    },
     "strikePrompt": {
       "title": "¿Qué pasó?",
       "swingAndMiss": "Swing y falló",
