@@ -230,18 +230,79 @@ export function applyAdvanceOpponentBatter(game: GameState, opponentLineup: stri
 
 export type HitType = "single" | "double" | "triple" | "home_run" | "hbp";
 
-// Mirrors record_batter_hit: single/double/triple place only the new
-// batter (existing runners are left exactly where they are -- real
-// advancement on a hit is situational, not a fixed rule); home_run scores
-// the batter and every occupied base (the one deterministic case) and
-// clears the diamond. hbp (hit by pitch) shares single's branch below --
-// the same force-cascade placement rule applies to a batter forced to
-// first by either a walk or a pitch.
+export type RunnerBase = "first" | "second" | "third";
+export type RunnerDest = RunnerBase | "home";
+export type RunnerDestMap = Partial<Record<RunnerBase, RunnerDest>>;
+
+const DEST_NUM: Record<RunnerDest, number> = { first: 1, second: 2, third: 3, home: 4 };
+const NUM_DEST: RunnerDest[] = ["first", "first", "second", "third", "home"];
+
+// Where each existing runner ends up by default (0 = nobody there, 1-3 =
+// that base, 4 = scores) -- the same deterministic rules record_batter_hit
+// applies when the scorer doesn't override anything (0031): home run/
+// triple send everyone home, a double sends the runners on 2nd/3rd home and
+// the runner on 1st to 3rd, a single/hbp only moves forced runners.
+function defaultRunnerDests(game: GameState, hitType: HitType): [number, number, number] {
+  const r1 = game.runner_on_first;
+  const r2 = game.runner_on_second;
+  const r3 = game.runner_on_third;
+  if (hitType === "home_run" || hitType === "triple") return [r1 ? 4 : 0, r2 ? 4 : 0, r3 ? 4 : 0];
+  if (hitType === "double") return [r1 ? 3 : 0, r2 ? 4 : 0, r3 ? 4 : 0];
+  return [r1 ? 2 : 0, r2 ? (r1 ? 3 : 2) : 0, r3 ? (r1 && r2 ? 4 : 3) : 0];
+}
+
+export type RunnerChoice = { base: RunnerBase; default: RunnerDest; options: RunnerDest[] };
+
+// The runners a single/double leaves genuinely open: each can stop short or
+// take one more base than the hit alone gives them. Returns [] (no
+// question) unless at least one of them could actually score -- a lone
+// runner on 1st going to 2nd vs 3rd on a single isn't worth a prompt every
+// time. Floors mirror the checks record_batter_hit enforces.
+export function hitRunnerChoices(game: GameState, hitType: HitType): RunnerChoice[] {
+  if (hitType !== "single" && hitType !== "double") return [];
+  const n = hitType === "single" ? 1 : 2;
+  const defaults = defaultRunnerDests(game, hitType);
+  const present = [game.runner_on_first, game.runner_on_second, game.runner_on_third];
+  const choices: RunnerChoice[] = [];
+  for (let b = 1; b <= 3; b++) {
+    if (!present[b - 1]) continue;
+    const forced = b === 1 || (b === 2 && game.runner_on_first) || (b === 3 && game.runner_on_first && game.runner_on_second);
+    const floor = hitType === "double" ? Math.max(b, 3) : forced ? b + 1 : b;
+    const max = Math.min(4, b + n + 1);
+    const options: RunnerDest[] = [];
+    for (let d = floor; d <= max; d++) options.push(NUM_DEST[d]);
+    choices.push({ base: (["first", "second", "third"] as const)[b - 1], default: NUM_DEST[defaults[b - 1]], options });
+  }
+  const askable = choices.filter((c) => c.options.length > 1);
+  return askable.some((c) => c.options.includes("home")) ? askable : [];
+}
+
+// Same ordering rule record_batter_hit validates: runners keep their order
+// and no two can share a base unless both score.
+export function runnerDestsAreValid(game: GameState, hitType: HitType, overrides: RunnerDestMap): boolean {
+  const d = defaultRunnerDests(game, hitType);
+  const keys: RunnerBase[] = ["first", "second", "third"];
+  keys.forEach((k, i) => {
+    if (overrides[k]) d[i] = DEST_NUM[overrides[k] as RunnerDest];
+  });
+  const present = [game.runner_on_first, game.runner_on_second, game.runner_on_third];
+  for (let behind = 0; behind < 3; behind++) {
+    for (let lead = behind + 1; lead < 3; lead++) {
+      if (present[behind] && present[lead] && d[behind] < 4 && d[lead] < 4 && d[behind] >= d[lead]) return false;
+    }
+  }
+  return true;
+}
+
+// Mirrors record_batter_hit (0031): the batter lands on the base the hit
+// is worth (home run scores), existing runners follow
+// defaultRunnerDests unless the scorer overrode them via runnerDest.
 export function applyBatterHit(
   game: GameState,
   hitType: HitType,
   ourLineup: string[],
-  opponentLineup: string[]
+  opponentLineup: string[],
+  runnerDest?: RunnerDestMap
 ): GameState {
   const next = { ...game };
   const weAreBatting =
@@ -250,59 +311,52 @@ export function applyBatterHit(
       (game.inning_half === "bottom" && game.home_or_away === "home"));
 
   const batterId = weAreBatting ? game.current_batter_player_id : null;
-  let runs = 0;
 
-  if (hitType === "home_run") {
-    // Deterministic: batter and every occupied base all score, bases clear.
-    runs = 1;
-    if (game.runner_on_first) runs += 1;
-    if (game.runner_on_second) runs += 1;
-    if (game.runner_on_third) runs += 1;
-    next.runner_on_first = false;
-    next.runner_on_second = false;
-    next.runner_on_third = false;
-    next.runner_on_first_player_id = null;
-    next.runner_on_second_player_id = null;
-    next.runner_on_third_player_id = null;
-  } else if (hitType === "triple") {
-    // Deterministic, same philosophy as home_run: every existing runner
-    // scores, batter lands on 3rd.
-    if (game.runner_on_first) runs += 1;
-    if (game.runner_on_second) runs += 1;
-    if (game.runner_on_third) runs += 1;
-    next.runner_on_first = false;
-    next.runner_on_first_player_id = null;
-    next.runner_on_second = false;
-    next.runner_on_second_player_id = null;
-    next.runner_on_third = true;
-    next.runner_on_third_player_id = batterId;
-  } else if (hitType === "double") {
-    // 2nd and 3rd score outright; 1st advances exactly two bases, to 3rd
-    // (never colliding -- 2nd's occupant is already sent home above).
-    if (game.runner_on_second) runs += 1;
-    if (game.runner_on_third) runs += 1;
-    next.runner_on_first = false;
-    next.runner_on_first_player_id = null;
-    next.runner_on_second = true;
-    next.runner_on_second_player_id = batterId;
-    next.runner_on_third = game.runner_on_first;
-    next.runner_on_third_player_id = game.runner_on_first_player_id;
-  } else {
-    // single or hbp: landing base (1st) forces anyone there to 2nd,
-    // cascading to 3rd (and home) as needed -- same shape as the walk's
-    // force cascade.
-    if (game.runner_on_first) {
-      if (game.runner_on_second) {
-        if (game.runner_on_third) runs += 1;
-        next.runner_on_third = true;
-        next.runner_on_third_player_id = game.runner_on_second_player_id;
-      }
-      next.runner_on_second = true;
-      next.runner_on_second_player_id = game.runner_on_first_player_id;
+  // A ball in play (or hit batter) is a pitch -- mirrors record_batter_hit
+  // (0030_hit_counts_as_pitch.sql).
+  if (game.home_or_away !== null) {
+    if (weAreBatting) {
+      next.opponent_pitcher_pitch_count = game.opponent_pitcher_pitch_count + 1;
+      next.last_pitch_charged_to = "opponent";
+    } else {
+      next.our_pitcher_pitch_count = game.our_pitcher_pitch_count + 1;
+      next.last_pitch_charged_to = "our";
     }
-    next.runner_on_first = true;
-    next.runner_on_first_player_id = batterId;
   }
+
+  const dests = defaultRunnerDests(game, hitType);
+  if (runnerDest && (hitType === "single" || hitType === "double")) {
+    (["first", "second", "third"] as const).forEach((k, i) => {
+      if (runnerDest[k]) dests[i] = DEST_NUM[runnerDest[k] as RunnerDest];
+    });
+  }
+  const batterDest = hitType === "home_run" ? 4 : hitType === "triple" ? 3 : hitType === "double" ? 2 : 1;
+
+  next.runner_on_first = false;
+  next.runner_on_first_player_id = null;
+  next.runner_on_second = false;
+  next.runner_on_second_player_id = null;
+  next.runner_on_third = false;
+  next.runner_on_third_player_id = null;
+
+  let runs = 0;
+  const place = (dest: number, playerId: string | null) => {
+    if (dest === 4) runs += 1;
+    else if (dest === 1) {
+      next.runner_on_first = true;
+      next.runner_on_first_player_id = playerId;
+    } else if (dest === 2) {
+      next.runner_on_second = true;
+      next.runner_on_second_player_id = playerId;
+    } else if (dest === 3) {
+      next.runner_on_third = true;
+      next.runner_on_third_player_id = playerId;
+    }
+  };
+  if (game.runner_on_first) place(dests[0], game.runner_on_first_player_id);
+  if (game.runner_on_second) place(dests[1], game.runner_on_second_player_id);
+  if (game.runner_on_third) place(dests[2], game.runner_on_third_player_id);
+  place(batterDest, batterId);
 
   if (runs > 0 && game.home_or_away !== null) {
     if (weAreBatting) next.our_score = game.our_score + runs;

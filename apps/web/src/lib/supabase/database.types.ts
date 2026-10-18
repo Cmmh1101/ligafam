@@ -584,7 +584,11 @@ export type Database = {
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       record_batter_hit: {
-        Args: { p_game_id: string; p_hit_type: HitType };
+        Args: {
+          p_game_id: string;
+          p_hit_type: HitType;
+          p_runner_dest?: Partial<Record<"first" | "second" | "third", "first" | "second" | "third" | "home">> | null;
+        };
         Returns: Database["public"]["Tables"]["games"]["Row"];
       };
       set_current_batter: {

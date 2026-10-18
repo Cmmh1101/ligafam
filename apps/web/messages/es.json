@@ -269,9 +269,17 @@
       "yes": "Sí, golpeado por el lanzamiento",
       "no": "No"
     },
+    "runnerPrompt": {
+      "title": "¿Qué pasó con los corredores?",
+      "scored": "Anotó",
+      "runnerOn": "Corredor en {base}",
+      "confirm": "Confirmar",
+      "invalid": "Dos corredores no pueden estar en la misma base"
+    },
     "strikePrompt": {
       "title": "¿Qué pasó?",
       "swingAndMiss": "Swing y falló",
+      "looking": "Strike cantado",
       "foulBall": "Foul"
     },
     "currentBatterPrompt": {

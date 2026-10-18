@@ -269,9 +269,17 @@
       "yes": "Yes, hit by pitch",
       "no": "No"
     },
+    "runnerPrompt": {
+      "title": "What happened to the runners?",
+      "scored": "Scored",
+      "runnerOn": "Runner on {base}",
+      "confirm": "Confirm",
+      "invalid": "Two runners can't be on the same base"
+    },
     "strikePrompt": {
       "title": "What happened?",
       "swingAndMiss": "Swing and a miss",
+      "looking": "Strike looking",
       "foulBall": "Foul ball"
     },
     "currentBatterPrompt": {

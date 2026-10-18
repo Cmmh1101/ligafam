@@ -19,7 +19,12 @@ import {
   applyBatterHit,
   applySetCurrentBatter,
   applyMoveBaseRunner,
-  type HitType
+  hitRunnerChoices,
+  runnerDestsAreValid,
+  type HitType,
+  type RunnerBase,
+  type RunnerChoice,
+  type RunnerDestMap
 } from "@/lib/scoring/engine";
 
 type GameStatus = "scheduled" | "live" | "final" | "postponed" | "canceled";
@@ -120,6 +125,10 @@ export function GameScorePanel({
   const [game, setGame] = useState<Game | null>(initialGame);
   const [opponentLineup, setOpponentLineup] = useState<OpponentBatter[]>(initialOpponentLineup);
   const [positions, setPositions] = useState<Record<string, string | null>>(initialPositions);
+  // Live copy of the batting order -- initialLineup is only the page-load
+  // snapshot, so the batter/runner pickers showed an empty or outdated list
+  // whenever the lineup was saved or changed after the page had loaded.
+  const [lineup, setLineup] = useState<string[]>(initialLineup);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncFailedCount, setSyncFailedCount] = useState<number | null>(null);
@@ -155,6 +164,16 @@ export function GameScorePanel({
   // rather than always mapping to "strike".
   const [strikePrompt, setStrikePrompt] = useState(false);
 
+  // Single/double with runners who could score: asks where each runner
+  // actually ended up before the hit is recorded, instead of scoring them
+  // automatically. Preselected with the old automatic outcome, so the
+  // common case is one tap on Confirm.
+  const [hitPrompt, setHitPrompt] = useState<{
+    hitType: HitType;
+    choices: RunnerChoice[];
+    dests: RunnerDestMap;
+  } | null>(null);
+
   const opponentBatterIds = opponentLineup.map((o) => o.id);
 
   // A tap that opens one of the four prompts below (baseAction,
@@ -165,10 +184,10 @@ export function GameScorePanel({
   // there's a follow-up question waiting.
   const promptRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (baseAction || batterPrompt || pitcherPrompt || strikePrompt) {
+    if (baseAction || batterPrompt || pitcherPrompt || strikePrompt || hitPrompt) {
       promptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [baseAction, batterPrompt, pitcherPrompt, strikePrompt]);
+  }, [baseAction, batterPrompt, pitcherPrompt, strikePrompt, hitPrompt]);
 
   useEffect(() => {
     setMounted(true);
@@ -253,8 +272,15 @@ export function GameScorePanel({
   // this can subscribe directly instead of only reacting to a `games`
   // signal the way the opponent lineup effect above has to.
   async function refreshPositions(gameId: string) {
-    const { data } = await supabase.from("game_lineup").select("player_id, position").eq("game_id", gameId);
-    if (data) setPositions(Object.fromEntries(data.map((row) => [row.player_id, row.position])));
+    const { data } = await supabase
+      .from("game_lineup")
+      .select("player_id, position, batting_order")
+      .eq("game_id", gameId)
+      .order("batting_order", { ascending: true });
+    if (data) {
+      setPositions(Object.fromEntries(data.map((row) => [row.player_id, row.position])));
+      setLineup(data.map((row) => row.player_id));
+    }
   }
 
   useEffect(() => {
@@ -311,7 +337,8 @@ export function GameScorePanel({
       case "score_hit": {
         const { error: rpcError } = await supabase.rpc("record_batter_hit", {
           p_game_id: action.gameId,
-          p_hit_type: action.hitType
+          p_hit_type: action.hitType,
+          p_runner_dest: action.runnerDest ?? null
         });
         if (rpcError) throw rpcError;
         return;
@@ -492,7 +519,7 @@ export function GameScorePanel({
     const offlineAction: OutboxAction = { kind: "score_count", gameId: game.id, eventType, delta: 1 };
 
     if (!navigator.onLine) {
-      setGame({ ...game, ...applyCountEvent(game, eventType, 1, initialLineup, opponentBatterIds) });
+      setGame({ ...game, ...applyCountEvent(game, eventType, 1, lineup, opponentBatterIds) });
       await queueAction(offlineAction);
       setLoading(false);
       return;
@@ -506,7 +533,7 @@ export function GameScorePanel({
 
     if (countError) {
       if (looksOffline(countError)) {
-        setGame({ ...game, ...applyCountEvent(game, eventType, 1, initialLineup, opponentBatterIds) });
+        setGame({ ...game, ...applyCountEvent(game, eventType, 1, lineup, opponentBatterIds) });
         await queueAction(offlineAction);
         return;
       }
@@ -526,7 +553,7 @@ export function GameScorePanel({
     const offlineAction: OutboxAction = { kind: "score_count", gameId: game.id, eventType, delta: -1 };
 
     if (!navigator.onLine) {
-      setGame({ ...game, ...applyCountEvent(game, eventType, -1, initialLineup, opponentBatterIds) });
+      setGame({ ...game, ...applyCountEvent(game, eventType, -1, lineup, opponentBatterIds) });
       await queueAction(offlineAction);
       setLoading(false);
       return;
@@ -541,7 +568,7 @@ export function GameScorePanel({
 
     if (countError) {
       if (looksOffline(countError)) {
-        setGame({ ...game, ...applyCountEvent(game, eventType, -1, initialLineup, opponentBatterIds) });
+        setGame({ ...game, ...applyCountEvent(game, eventType, -1, lineup, opponentBatterIds) });
         await queueAction(offlineAction);
         return;
       }
@@ -582,14 +609,29 @@ export function GameScorePanel({
     }
   }
 
-  async function recordHit(hitType: HitType) {
+  // Entry point for the Single/Double/Triple/Home run buttons: when the
+  // hit leaves a runner's outcome genuinely open (e.g. runner on 2nd on a
+  // double: scored or stopped at 3rd?), ask first; otherwise record it.
+  function startHit(hitType: HitType) {
+    if (!game) return;
+    const choices = hitRunnerChoices(game, hitType);
+    if (choices.length === 0) {
+      recordHit(hitType);
+      return;
+    }
+    const dests: RunnerDestMap = {};
+    for (const c of choices) dests[c.base] = c.default;
+    setHitPrompt({ hitType, choices, dests });
+  }
+
+  async function recordHit(hitType: HitType, runnerDest?: RunnerDestMap) {
     if (!game) return;
     setLoading(true);
     setError(null);
-    const offlineAction: OutboxAction = { kind: "score_hit", gameId: game.id, hitType };
+    const offlineAction: OutboxAction = { kind: "score_hit", gameId: game.id, hitType, runnerDest };
 
     if (!navigator.onLine) {
-      setGame({ ...game, ...applyBatterHit(game, hitType, initialLineup, opponentBatterIds) });
+      setGame({ ...game, ...applyBatterHit(game, hitType, lineup, opponentBatterIds, runnerDest) });
       await queueAction(offlineAction);
       setLoading(false);
       return;
@@ -597,13 +639,14 @@ export function GameScorePanel({
 
     const { data, error: hitError } = await supabase.rpc("record_batter_hit", {
       p_game_id: game.id,
-      p_hit_type: hitType
+      p_hit_type: hitType,
+      p_runner_dest: runnerDest ?? null
     });
     setLoading(false);
 
     if (hitError) {
       if (looksOffline(hitError)) {
-        setGame({ ...game, ...applyBatterHit(game, hitType, initialLineup, opponentBatterIds) });
+        setGame({ ...game, ...applyBatterHit(game, hitType, lineup, opponentBatterIds, runnerDest) });
         await queueAction(offlineAction);
         return;
       }
@@ -782,7 +825,7 @@ export function GameScorePanel({
     const offlineAction: OutboxAction = { kind: "score_advance_batter", gameId: game.id };
 
     if (!navigator.onLine) {
-      setGame({ ...game, ...applyAdvanceBatter(game, initialLineup) });
+      setGame({ ...game, ...applyAdvanceBatter(game, lineup) });
       await queueAction(offlineAction);
       setLoading(false);
       return;
@@ -793,7 +836,7 @@ export function GameScorePanel({
 
     if (advanceError) {
       if (looksOffline(advanceError)) {
-        setGame({ ...game, ...applyAdvanceBatter(game, initialLineup) });
+        setGame({ ...game, ...applyAdvanceBatter(game, lineup) });
         await queueAction(offlineAction);
         return;
       }
@@ -1065,7 +1108,7 @@ export function GameScorePanel({
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.moveRunner.placeTitle")}</p>
               <div className="flex flex-wrap gap-2">
-                {initialLineup.map((id) => (
+                {lineup.map((id) => (
                   <button
                     key={id}
                     type="button"
@@ -1165,8 +1208,11 @@ export function GameScorePanel({
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.selectReplacement")}</p>
               <div className="flex flex-wrap gap-2">
+                {roster.filter((p) => !lineup.includes(p.id)).length === 0 && (
+                  <span className="text-xs text-slate-500">{t("game.noReserveAvailable")}</span>
+                )}
                 {roster
-                  .filter((p) => !initialLineup.includes(p.id))
+                  .filter((p) => !lineup.includes(p.id))
                   .map((p) => (
                     <button
                       key={p.id}
@@ -1191,7 +1237,7 @@ export function GameScorePanel({
             <>
               <p className="text-xs font-medium text-slate-500">{t("game.selectResumeBatter")}</p>
               <div className="flex flex-wrap gap-2">
-                {initialLineup.map((id) => (
+                {lineup.map((id) => (
                   <button
                     key={id}
                     type="button"
@@ -1251,6 +1297,74 @@ export function GameScorePanel({
         </div>
       )}
 
+      {isLive && isApprovedAdmin && hitPrompt && (
+        <div
+          ref={promptRef}
+          className="flex flex-col gap-3 rounded-lg border-2 border-amber-400 bg-amber-50 p-3 shadow-[0_0_0_4px_rgba(251,191,36,0.25)]"
+        >
+          <p className="text-xs font-medium text-slate-500">{t("game.runnerPrompt.title")}</p>
+          {hitPrompt.choices.map((choice) => {
+            const runnerId =
+              choice.base === "first"
+                ? game.runner_on_first_player_id
+                : choice.base === "second"
+                  ? game.runner_on_second_player_id
+                  : game.runner_on_third_player_id;
+            return (
+              <div key={choice.base} className="flex flex-col gap-1.5">
+                <span className="text-sm font-semibold text-slate-800">
+                  {playerName(runnerId) ?? t("game.runnerPrompt.runnerOn", { base: t(`game.base.${choice.base}`) })}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {choice.options.map((option) => {
+                    const selected = hitPrompt.dests[choice.base as RunnerBase] === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() =>
+                          setHitPrompt({ ...hitPrompt, dests: { ...hitPrompt.dests, [choice.base]: option } })
+                        }
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                          selected
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-300 bg-white text-slate-700"
+                        }`}
+                      >
+                        {option === "home" ? t("game.runnerPrompt.scored") : t(`game.moveRunner.destination.${option}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {!runnerDestsAreValid(game, hitPrompt.hitType, hitPrompt.dests) && (
+            <p className="text-xs text-red-600">{t("game.runnerPrompt.invalid")}</p>
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={loading || !runnerDestsAreValid(game, hitPrompt.hitType, hitPrompt.dests)}
+              onClick={() => {
+                recordHit(hitPrompt.hitType, hitPrompt.dests);
+                setHitPrompt(null);
+              }}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {t("game.runnerPrompt.confirm")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHitPrompt(null)}
+              className="text-xs font-medium text-slate-500 underline"
+            >
+              {t("common.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {isLive && isApprovedAdmin && strikePrompt && (
         <div
           ref={promptRef}
@@ -1268,6 +1382,17 @@ export function GameScorePanel({
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
             >
               {t("game.strikePrompt.swingAndMiss")}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                addCount("strike");
+                setStrikePrompt(false);
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
+            >
+              {t("game.strikePrompt.looking")}
             </button>
             <button
               type="button"
@@ -1299,7 +1424,7 @@ export function GameScorePanel({
                 key={hitType}
                 type="button"
                 disabled={loading}
-                onClick={() => recordHit(hitType)}
+                onClick={() => startHit(hitType)}
                 className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm font-medium text-slate-700 disabled:opacity-50"
               >
                 {t(`game.hit.${hitType}`)}
